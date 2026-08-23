@@ -503,13 +503,18 @@ Create `SecurityOptions` với defaults `false`, sets cho certificate/team ID v�
 
 ```dart
 final class SecurityOptions {
-  const SecurityOptions({
+  SecurityOptions({
     this.enablePlayIntegrity = false,
     this.enableAppAttest = false,
-    this.expectedAndroidCertificateSha256 = const {},
-    this.expectedIosTeamIdentifiers = const {},
+    Set<String> expectedAndroidCertificateSha256 = const {},
+    Set<String> expectedIosTeamIdentifiers = const {},
     this.attestationAdapter,
-  });
+  }) : expectedAndroidCertificateSha256 = Set.unmodifiable(
+         expectedAndroidCertificateSha256,
+       ),
+       expectedIosTeamIdentifiers = Set.unmodifiable(
+         expectedIosTeamIdentifiers,
+       );
   final bool enablePlayIntegrity;
   final bool enableAppAttest;
   final Set<String> expectedAndroidCertificateSha256;
@@ -554,8 +559,9 @@ Facade gọi adapter chỉ theo platform thực tế:
 ```dart
 abstract final class DeviceSecurityGuard {
   static Future<SecurityAssessment> assess({
-    SecurityOptions options = const SecurityOptions(),
+    SecurityOptions? options,
   }) async {
+    options ??= SecurityOptions();
     options.validate();
     final platform = DeviceSecurityGuardPlatform.instance;
     final local = await platform.assessLocal(options);
