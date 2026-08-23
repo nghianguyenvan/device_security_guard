@@ -10,14 +10,16 @@ import io.flutter.plugin.common.MethodChannel.Result
 class DeviceSecurityGuardPlugin :
     FlutterPlugin,
     MethodCallHandler {
-    // The MethodChannel that will the communication between Flutter and native Android
-    //
-    // This local reference serves to register the plugin with the Flutter Engine and unregister it
-    // when the Flutter Engine is detached from the Activity
     private lateinit var channel: MethodChannel
+    private var detector: AndroidSecurityDetector? = null
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-        channel = MethodChannel(flutterPluginBinding.binaryMessenger, "device_security_guard")
+        detector = AndroidSecurityDetector(flutterPluginBinding.applicationContext)
+        channel =
+            MethodChannel(
+                flutterPluginBinding.binaryMessenger,
+                "dev.vannghia/device_security_guard",
+            )
         channel.setMethodCallHandler(this)
     }
 
@@ -25,14 +27,31 @@ class DeviceSecurityGuardPlugin :
         call: MethodCall,
         result: Result
     ) {
-        if (call.method == "getPlatformVersion") {
-            result.success("Android ${android.os.Build.VERSION.RELEASE}")
-        } else {
-            result.notImplemented()
+        when (call.method) {
+            "assess" -> {
+                val expectedCertificates =
+                    call.argument<List<String>>("expectedAndroidCertificateSha256")
+                        ?.toSet()
+                        .orEmpty()
+                val signals = detector?.assess(expectedCertificates)
+                if (signals == null) {
+                    result.error("not_attached", "Plugin is not attached to an engine", null)
+                    return
+                }
+                result.success(
+                    mapOf(
+                        "schemaVersion" to 1,
+                        "platform" to "android",
+                        "signals" to signals,
+                    ),
+                )
+            }
+            else -> result.notImplemented()
         }
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
+        detector = null
     }
 }
