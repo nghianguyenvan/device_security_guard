@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "device_security_guard",
     platforms: [
-        .iOS("13.0")
+        .iOS("15.0")
     ],
     products: [
         .library(name: "device-security-guard", targets: ["device_security_guard"])
