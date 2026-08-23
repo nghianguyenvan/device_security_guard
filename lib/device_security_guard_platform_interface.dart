@@ -5,6 +5,7 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'device_security_guard_method_channel.dart';
 import 'src/attestation.dart';
 import 'src/models.dart';
+import 'src/required_signals.dart';
 import 'src/security_options.dart';
 
 abstract class DeviceSecurityGuardPlatform extends PlatformInterface
@@ -17,23 +18,9 @@ abstract class DeviceSecurityGuardPlatform extends PlatformInterface
   static DeviceSecurityGuardPlatform _instance =
       MethodChannelDeviceSecurityGuard();
 
-  static const androidSignals = {
-    SecuritySignal.debugger,
-    SecuritySignal.emulator,
-    SecuritySignal.adbEnabled,
-    SecuritySignal.hooking,
-    SecuritySignal.repackaging,
-    SecuritySignal.root,
-    SecuritySignal.bootloaderUnlocked,
-  };
+  static const androidSignals = androidRequiredSignals;
 
-  static const iosSignals = {
-    SecuritySignal.debugger,
-    SecuritySignal.emulator,
-    SecuritySignal.hooking,
-    SecuritySignal.repackaging,
-    SecuritySignal.jailbreak,
-  };
+  static const iosSignals = iosRequiredSignals;
 
   /// Instance [DeviceSecurityGuardPlatform] đang được sử dụng.
   ///

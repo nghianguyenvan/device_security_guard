@@ -21,7 +21,7 @@ dependencies:
 
 ```dart
 final assessment = await DeviceSecurityGuard.assess(
-  options: const SecurityOptions(
+  options: SecurityOptions(
     expectedAndroidCertificateSha256: {
       '0123456789ABCDEF...',
     },
@@ -87,7 +87,7 @@ apksigner verify --print-certs app-release.apk
 
 ### iOS
 
-Truyền Team ID của tài khoản ký ứng dụng. Kiểm tra cục bộ Team ID là best-effort; bản App Store có thể không cho phép đọc đủ thông tin và khi đó kết quả là `inconclusive`. App Attest được backend xác minh là lớp bảo vệ mạnh hơn cho danh tính ứng dụng production.
+Truyền Team ID của tài khoản ký ứng dụng. Plugin đọc access group do Keychain/Security framework cấp để suy ra Team ID của bản đang chạy. Nếu hệ thống không trả được danh tính, kết quả là `inconclusive`. App Attest được backend xác minh vẫn là lớp bảo vệ mạnh hơn cho danh tính ứng dụng production.
 
 ## Play Integrity và App Attest
 
@@ -110,6 +110,42 @@ Adapter do ứng dụng chủ triển khai phải thực hiện luồng sau:
 4. Gửi token/attestation/assertion về backend.
 5. Backend xác minh độ mới, chống replay, package/bundle ID, certificate/Team ID và verdict bắt buộc.
 6. Adapter trả `AttestationAssessment`; chỉ trả `trusted` sau khi backend xác minh thành công.
+
+Khung adapter minh họa (các hàm `backend.*` thuộc ứng dụng chủ):
+
+```dart
+final class BackendAttestationAdapter implements AttestationAdapter {
+  BackendAttestationAdapter(this.backend);
+
+  final SecurityBackend backend;
+
+  @override
+  Future<AttestationAssessment> assess(
+    AttestationProvider provider,
+    AttestationClient client,
+  ) async {
+    switch (provider) {
+      case AttestationProvider.playIntegrity:
+        final challenge = await backend.createPlayChallenge();
+        final token = await client.requestPlayIntegrityToken(
+          cloudProjectNumber: challenge.cloudProjectNumber,
+          requestHash: challenge.requestHash,
+        );
+        return backend.verifyPlayToken(challenge.id, token);
+      case AttestationProvider.appAttest:
+        final challenge = await backend.createAppAttestChallenge();
+        final keyId = await backend.loadOrGenerateKeyId(client);
+        final assertion = await client.generateAppAttestAssertion(
+          keyId: keyId,
+          clientDataHash: challenge.clientDataHash,
+        );
+        return backend.verifyAppAssertion(challenge.id, keyId, assertion);
+    }
+  }
+}
+```
+
+Lần đầu đăng ký App Attest key, adapter dùng `generateAppAttestKey` và `attestAppAttestKey`; các lần sau dùng assertion. Backend phải lưu public key, counter và challenge đã sử dụng.
 
 Các primitive có sẵn:
 

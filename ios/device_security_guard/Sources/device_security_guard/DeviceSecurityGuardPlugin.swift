@@ -4,6 +4,10 @@ import UIKit
 public class DeviceSecurityGuardPlugin: NSObject, FlutterPlugin {
   private let detector = IOSSecurityDetector()
   private let appAttestClient = AppAttestClient()
+  private let detectorQueue = DispatchQueue(
+    label: "dev.vannghia.device_security_guard.detector",
+    qos: .userInitiated
+  )
 
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(
@@ -21,15 +25,20 @@ public class DeviceSecurityGuardPlugin: NSObject, FlutterPlugin {
       let expectedTeamIdentifiers = Set(
         arguments?["expectedIosTeamIdentifiers"] as? [String] ?? []
       )
-      result([
-        "schemaVersion": 1,
-        "platform": "ios",
-        "operatingSystemVersion": UIDevice.current.systemVersion,
-        "assessedAtEpochMs": Int64(Date().timeIntervalSince1970 * 1000),
-        "signals": detector.assess(
-          expectedTeamIdentifiers: expectedTeamIdentifiers
-        ),
-      ])
+      let operatingSystemVersion = UIDevice.current.systemVersion
+      let assessedAtEpochMs = Int64(Date().timeIntervalSince1970 * 1000)
+      detectorQueue.async {
+        let payload: [String: Any] = [
+          "schemaVersion": 1,
+          "platform": "ios",
+          "operatingSystemVersion": operatingSystemVersion,
+          "assessedAtEpochMs": assessedAtEpochMs,
+          "signals": self.detector.assess(
+            expectedTeamIdentifiers: expectedTeamIdentifiers
+          ),
+        ]
+        DispatchQueue.main.async { result(payload) }
+      }
     case "isAppAttestSupported":
       result(appAttestClient.isSupported)
     case "generateAppAttestKey":

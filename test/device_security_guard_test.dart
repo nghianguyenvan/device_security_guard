@@ -124,4 +124,17 @@ void main() {
     expect(result.attestations.single.status, AttestationStatus.inconclusive);
     expect(result.attestations.single.reasonCode, 'attestation_error');
   });
+
+  test('invalid identity fails before invoking native assessment', () async {
+    final platform = FakePlatform(SecurityPlatform.android);
+    DeviceSecurityGuardPlatform.instance = platform;
+
+    await expectLater(
+      DeviceSecurityGuard.assess(
+        options: SecurityOptions(expectedAndroidCertificateSha256: {'invalid'}),
+      ),
+      throwsArgumentError,
+    );
+    expect(platform.localAssessmentCalls, 0);
+  });
 }

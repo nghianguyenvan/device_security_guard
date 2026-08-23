@@ -12,9 +12,8 @@ export 'src/security_options.dart';
 
 /// Điểm truy cập cho đánh giá thiết bị cục bộ và attestation tùy chọn.
 abstract final class DeviceSecurityGuard {
-  static Future<SecurityAssessment> assess({
-    SecurityOptions options = const SecurityOptions(),
-  }) async {
+  static Future<SecurityAssessment> assess({SecurityOptions? options}) async {
+    options ??= SecurityOptions();
     options.validate();
     final platformClient = DeviceSecurityGuardPlatform.instance;
     final local = await platformClient.assessLocal(options);
@@ -34,7 +33,10 @@ abstract final class DeviceSecurityGuard {
       options.attestationAdapter!,
       platformClient,
     );
-    return local.withAttestations([attestation]);
+    return local.withAttestations(
+      [attestation],
+      requestedAttestations: {provider},
+    );
   }
 
   static Future<AttestationAssessment> _assessAttestation(

@@ -1006,7 +1006,7 @@ enum IOSSignalClassifier {
 - debugger: `sysctl` với `KERN_PROC_PID`, kiểm tra `P_TRACED`;
 - emulator: `#if targetEnvironment(simulator)`;
 - hooking: `_dyld_image_count`, `_dyld_get_image_name`, biến môi trường `DYLD_INSERT_LIBRARIES`;
-- repackaging: `SecTaskCreateFromSelf` và entitlement `com.apple.developer.team-identifier`, so với expected Team IDs; expected rỗng trả `inconclusive/expected_identity_missing`;
+- repackaging: đọc Keychain access group bằng Security framework công khai để suy ra Team ID của bản ký đang chạy, so với expected Team IDs; expected rỗng trả `inconclusive/expected_identity_missing`;
 - jailbreak: kiểm tra các artifact `/Applications/Cydia.app`, `/Library/MobileSubstrate/MobileSubstrate.dylib`, `/bin/bash`, `/usr/sbin/sshd`, `/var/jb`, và thử tạo/xóa file tên ngẫu nhiên dưới `/private` để phát hiện vượt sandbox.
 
 Không trả đường dẫn cụ thể qua channel. Lỗi detector trả `inconclusive/detector_error`.

@@ -61,23 +61,29 @@ final class SecurityAssessment {
     required this.assessedAt,
     required Map<SecuritySignal, SignalResult> signals,
     List<AttestationAssessment> attestations = const [],
+    Set<AttestationProvider> requestedAttestations = const {},
   }) : signals = UnmodifiableMapView(Map.of(signals)),
-       attestations = List.unmodifiable(attestations);
+       attestations = List.unmodifiable(attestations),
+       requestedAttestations = Set.unmodifiable(requestedAttestations);
 
   final SecurityPlatform platform;
   final String operatingSystemVersion;
   final DateTime assessedAt;
   final Map<SecuritySignal, SignalResult> signals;
   final List<AttestationAssessment> attestations;
+  final Set<AttestationProvider> requestedAttestations;
 
-  SecurityAssessment withAttestations(List<AttestationAssessment> values) =>
-      SecurityAssessment(
-        platform: platform,
-        operatingSystemVersion: operatingSystemVersion,
-        assessedAt: assessedAt,
-        signals: signals,
-        attestations: values,
-      );
+  SecurityAssessment withAttestations(
+    List<AttestationAssessment> values, {
+    Set<AttestationProvider>? requestedAttestations,
+  }) => SecurityAssessment(
+    platform: platform,
+    operatingSystemVersion: operatingSystemVersion,
+    assessedAt: assessedAt,
+    signals: signals,
+    attestations: values,
+    requestedAttestations: requestedAttestations ?? this.requestedAttestations,
+  );
 }
 
 /// Kết quả áp dụng policy lên một [SecurityAssessment].

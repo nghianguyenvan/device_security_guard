@@ -51,7 +51,7 @@ Phiên bản 1 được phát hành dưới dạng một Flutter plugin duy nh�
 
 ```dart
 final assessment = await DeviceSecurityGuard.assess(
-  options: const SecurityOptions(
+  options: SecurityOptions(
     enablePlayIntegrity: false,
     enableAppAttest: false,
   ),

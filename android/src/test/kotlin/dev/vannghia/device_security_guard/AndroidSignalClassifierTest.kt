@@ -51,6 +51,14 @@ internal class AndroidSignalClassifierTest {
     }
 
     @Test
+    fun unavailableProcessMapsAreInconclusive() {
+        assertEquals(
+            CheckValue.INCONCLUSIVE,
+            AndroidSignalClassifier.hooking(processMaps = null),
+        )
+    }
+
+    @Test
     fun rootArtifactIsDetected() {
         assertEquals(
             CheckValue.DETECTED,

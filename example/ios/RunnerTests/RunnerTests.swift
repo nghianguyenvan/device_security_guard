@@ -29,4 +29,57 @@ class RunnerTests: XCTestCase {
     }
     waitForExpectations(timeout: 1)
   }
+
+  func testFridaImageIsClassifiedAsHooking() {
+    XCTAssertEqual(
+      IOSSignalClassifier.hooking(
+        loadedImages: ["/usr/lib/FridaGadget.dylib"],
+        environment: [:]
+      ),
+      .detected
+    )
+  }
+
+  func testMatchingTeamIdentifierIsNotRepackaged() {
+    XCTAssertEqual(
+      IOSSignalClassifier.repackaging(
+        actualTeamIdentifier: "TEAM123456",
+        expectedTeamIdentifiers: ["TEAM123456"]
+      ),
+      .notDetected
+    )
+  }
+
+  func testMissingTeamIdentifierIsInconclusive() {
+    XCTAssertEqual(
+      IOSSignalClassifier.repackaging(
+        actualTeamIdentifier: nil,
+        expectedTeamIdentifiers: ["TEAM123456"]
+      ),
+      .inconclusive
+    )
+  }
+
+  func testDetectorUsesRuntimeTeamIdentifierReader() {
+    let match = IOSSecurityDetector(teamIdentifierReader: { "TEAM123456" })
+      .assess(expectedTeamIdentifiers: ["TEAM123456"])["repackaging"]
+    let mismatch = IOSSecurityDetector(teamIdentifierReader: { "OTHER12345" })
+      .assess(expectedTeamIdentifiers: ["TEAM123456"])["repackaging"]
+    let unavailable = IOSSecurityDetector(teamIdentifierReader: { nil })
+      .assess(expectedTeamIdentifiers: ["TEAM123456"])["repackaging"]
+
+    XCTAssertEqual(match?["status"], "notDetected")
+    XCTAssertEqual(mismatch?["status"], "detected")
+    XCTAssertEqual(unavailable?["status"], "inconclusive")
+  }
+
+  func testJailbreakArtifactIsDetected() {
+    XCTAssertEqual(
+      IOSSignalClassifier.jailbreak(
+        existingArtifacts: ["/Applications/Cydia.app"],
+        canWriteOutsideSandbox: false
+      ),
+      .detected
+    )
+  }
 }

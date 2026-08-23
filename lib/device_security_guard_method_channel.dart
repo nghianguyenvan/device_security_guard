@@ -120,7 +120,8 @@ class MethodChannelDeviceSecurityGuard extends DeviceSecurityGuardPlatform {
       final assessedAtEpochMs = payload['assessedAtEpochMs'];
       final rawSignals = payload['signals'];
       if (operatingSystemVersion is! String ||
-          assessedAtEpochMs is! num ||
+          assessedAtEpochMs is! int ||
+          assessedAtEpochMs.abs() > 8640000000000000 ||
           rawSignals is! Map) {
         throw const FormatException();
       }
@@ -160,7 +161,7 @@ class MethodChannelDeviceSecurityGuard extends DeviceSecurityGuardPlatform {
         platform: platform,
         operatingSystemVersion: operatingSystemVersion,
         assessedAt: DateTime.fromMillisecondsSinceEpoch(
-          assessedAtEpochMs.toInt(),
+          assessedAtEpochMs,
           isUtc: true,
         ),
         signals: results,

@@ -1,8 +1,17 @@
 import Darwin
 import Foundation
 import MachO
+import Security
 
 internal final class IOSSecurityDetector {
+  private let teamIdentifierReader: () -> String?
+
+  init(
+    teamIdentifierReader: @escaping () -> String? = IOSSecurityDetector.readTeamIdentifier
+  ) {
+    self.teamIdentifierReader = teamIdentifierReader
+  }
+
   func assess(
     expectedTeamIdentifiers: Set<String>
   ) -> [String: [String: String]] {
@@ -58,16 +67,17 @@ internal final class IOSSecurityDetector {
   private func repackaging(
     expectedTeamIdentifiers: Set<String>
   ) throws -> IOSSignalResult {
+    guard !expectedTeamIdentifiers.isEmpty else {
+      return IOSSignalResult(.inconclusive, "team_identifier_unconfigured")
+    }
     let value = IOSSignalClassifier.repackaging(
-      actualTeamIdentifier: actualTeamIdentifier(),
+      actualTeamIdentifier: teamIdentifierReader(),
       expectedTeamIdentifiers: expectedTeamIdentifiers
     )
     return value.result(
       detected: "team_identifier_mismatch",
       notDetected: "team_identifier_match",
-      inconclusive: expectedTeamIdentifiers.isEmpty
-        ? "team_identifier_unconfigured"
-        : "team_identifier_unavailable"
+      inconclusive: "team_identifier_unavailable"
     )
   }
 
@@ -97,32 +107,30 @@ internal final class IOSSecurityDetector {
     #endif
   }
 
-  private func actualTeamIdentifier() -> String? {
-    if let prefix = Bundle.main.object(
-      forInfoDictionaryKey: "AppIdentifierPrefix"
-    ) as? String {
-      return prefix.trimmingCharacters(in: CharacterSet(charactersIn: "."))
-    }
-
-    guard let url = Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision"),
-          let data = try? Data(contentsOf: url),
-          let text = String(data: data, encoding: .isoLatin1),
-          let start = text.range(of: "<?xml"),
-          let end = text.range(of: "</plist>"),
-          start.lowerBound < end.upperBound else {
+  private static func readTeamIdentifier() -> String? {
+    let account = UUID().uuidString
+    let service = "dev.vannghia.device_security_guard.team_identifier"
+    let deleteQuery: [CFString: Any] = [
+      kSecClass: kSecClassGenericPassword,
+      kSecAttrAccount: account,
+      kSecAttrService: service,
+    ]
+    let addQuery: [CFString: Any] = deleteQuery.merging([
+      kSecValueData: Data([0]),
+      kSecAttrAccessible: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+      kSecReturnAttributes: true,
+    ]) { _, new in new }
+    var item: CFTypeRef?
+    guard SecItemAdd(addQuery as CFDictionary, &item) == errSecSuccess else {
       return nil
     }
-    let plistText = String(text[start.lowerBound..<end.upperBound])
-    guard let plistData = plistText.data(using: .isoLatin1),
-          let plist = try? PropertyListSerialization.propertyList(
-            from: plistData,
-            options: [],
-            format: nil
-          ) as? [String: Any],
-          let entitlements = plist["Entitlements"] as? [String: Any] else {
+    defer { SecItemDelete(deleteQuery as CFDictionary) }
+    guard let attributes = item as? [CFString: Any],
+          let accessGroup = attributes[kSecAttrAccessGroup] as? String,
+          let teamIdentifier = accessGroup.split(separator: ".").first else {
       return nil
     }
-    return entitlements["com.apple.developer.team-identifier"] as? String
+    return String(teamIdentifier)
   }
 
   private func canWriteOutsideSandbox() -> Bool {

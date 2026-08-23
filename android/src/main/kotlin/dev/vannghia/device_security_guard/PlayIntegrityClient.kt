@@ -24,7 +24,10 @@ internal class PlayIntegrityClient(context: Context) {
                         .build()
                 provider.request(request)
                     .addOnSuccessListener { token -> onSuccess(token.token()) }
-                    .addOnFailureListener(onFailure)
+                    .addOnFailureListener { error ->
+                        providers.remove(cloudProjectNumber)
+                        onFailure(error)
+                    }
             }
             .addOnFailureListener { error ->
                 providers.remove(cloudProjectNumber)

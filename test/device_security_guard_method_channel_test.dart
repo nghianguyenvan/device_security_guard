@@ -43,7 +43,7 @@ void main() {
         });
 
     await platform.assessLocal(
-      const SecurityOptions(
+      SecurityOptions(
         expectedAndroidCertificateSha256: {'AABB'},
         expectedIosTeamIdentifiers: {'TEAM123'},
       ),
@@ -57,7 +57,7 @@ void main() {
   });
 
   test('missing required signals become inconclusive', () async {
-    final result = await platform.assessLocal(const SecurityOptions());
+    final result = await platform.assessLocal(SecurityOptions());
 
     expect(result.signals, hasLength(7));
     expect(
@@ -79,7 +79,25 @@ void main() {
         });
 
     expect(
-      platform.assessLocal(const SecurityOptions()),
+      platform.assessLocal(SecurityOptions()),
+      throwsA(
+        isA<PlatformException>().having(
+          (error) => error.code,
+          'code',
+          'invalid_payload',
+        ),
+      ),
+    );
+  });
+
+  test('invalid assessment timestamp is rejected consistently', () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (_) async {
+          return {...partialPayload, 'assessedAtEpochMs': double.nan};
+        });
+
+    await expectLater(
+      platform.assessLocal(SecurityOptions()),
       throwsA(
         isA<PlatformException>().having(
           (error) => error.code,

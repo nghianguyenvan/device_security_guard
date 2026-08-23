@@ -10,7 +10,7 @@ Tài liệu này ánh xạ các detector của `device_security_guard` với nh�
 | Thiết bị ảo | build fields và `ro.kernel.qemu` | `targetEnvironment(simulator)` | `inconclusive` nếu detector lỗi |
 | ADB | `Settings.Global.ADB_ENABLED` | Không áp dụng | `inconclusive` nếu truy vấn lỗi |
 | Hook/chèn mã runtime | `/proc/self/maps`, marker Frida/Xposed/Substrate | loaded images, `DYLD_INSERT_LIBRARIES`, marker hook phổ biến | `inconclusive` nếu detector lỗi |
-| Repackage/can thiệp ứng dụng | SHA-256 signing certificate | Team ID từ bundle/provisioning profile khi có | `inconclusive` nếu chưa cấu hình hoặc không đọc được danh tính |
+| Repackage/can thiệp ứng dụng | SHA-256 signing certificate | Team ID từ Keychain access group do hệ thống ký cấp | `inconclusive` nếu chưa cấu hình hoặc không đọc được danh tính |
 | Root/jailbreak | build tags, root artifacts và system properties | jailbreak artifacts và thử ghi ngoài sandbox | `inconclusive` khi detector lỗi; jailbreak trên simulator không được coi là an toàn |
 | Bootloader mở khóa | verified boot, flash lock và vbmeta state | Không áp dụng | `inconclusive` nếu không có trạng thái nhận diện được |
 
@@ -33,4 +33,3 @@ Tài liệu này ánh xạ các detector của `device_security_guard` với nh�
 Detector cục bộ là heuristic defense-in-depth và có thể có false positive, false negative hoặc bị hook/bypass. Cần kiểm thử trên ma trận thiết bị thật, kết hợp kiểm soát backend và cập nhật indicator theo threat intelligence của đơn vị vận hành.
 
 Nguồn chính thức: [Thông tư 77/2025/TT-NHNN](https://vanban.chinhphu.vn/?docid=216580&pageid=27160), ban hành ngày 31/12/2025 và có hiệu lực từ 01/03/2026.
-

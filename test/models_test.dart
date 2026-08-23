@@ -40,4 +40,21 @@ void main() {
 
     expect(assessment.attestations, isEmpty);
   });
+
+  test('assessment protects requested attestations from source mutation', () {
+    final source = <AttestationProvider>{AttestationProvider.playIntegrity};
+    final assessment = SecurityAssessment(
+      platform: SecurityPlatform.android,
+      operatingSystemVersion: '16',
+      assessedAt: DateTime.utc(2026),
+      signals: const {},
+      requestedAttestations: source,
+    );
+
+    source.clear();
+
+    expect(assessment.requestedAttestations, {
+      AttestationProvider.playIntegrity,
+    });
+  });
 }

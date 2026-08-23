@@ -1,4 +1,5 @@
 import 'models.dart';
+import 'required_signals.dart';
 
 /// Policy helper cho các dấu hiệu phía thiết bị trong Thông tư 77/2025/TT-NHNN.
 abstract final class Circular77Policy {
@@ -22,6 +23,16 @@ abstract final class Circular77Policy {
     }
 
     final inconclusive = <String>[
+      if (requiredSignalsFor(
+        assessment.platform,
+      ).any((signal) => !assessment.signals.containsKey(signal)))
+        'missing_signal',
+      if (assessment.requestedAttestations.any(
+        (provider) => !assessment.attestations.any(
+          (result) => result.provider == provider,
+        ),
+      ))
+        'missing_attestation',
       ...assessment.signals.values
           .where((result) => result.status == CheckStatus.inconclusive)
           .map((result) => result.reasonCode),

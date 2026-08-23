@@ -61,11 +61,11 @@ internal final class AppAttestClient {
     result: @escaping FlutterResult
   ) {
     DispatchQueue.main.async {
-      if let serviceError {
+      if serviceError != nil {
         result(
           self.error(
             code: "app_attest_error",
-            message: serviceError.localizedDescription
+            message: "App Attest request failed"
           )
         )
       } else if let value {

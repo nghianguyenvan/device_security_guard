@@ -47,10 +47,19 @@ internal object AndroidSignalClassifier {
         return if (detected) CheckValue.DETECTED else CheckValue.NOT_DETECTED
     }
 
-    fun hooking(processMaps: String): CheckValue {
-        val normalized = processMaps.lowercase()
+    fun hooking(
+        processMaps: String?,
+        loadedFrameworks: Set<String> = emptySet(),
+    ): CheckValue {
+        val normalized =
+            listOfNotNull(processMaps)
+                .plus(loadedFrameworks)
+                .joinToString()
+                .lowercase()
         return if (hookMarkers.any(normalized::contains)) {
             CheckValue.DETECTED
+        } else if (processMaps == null) {
+            CheckValue.INCONCLUSIVE
         } else {
             CheckValue.NOT_DETECTED
         }

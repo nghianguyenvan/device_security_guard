@@ -7,6 +7,7 @@ import android.os.Debug
 import android.provider.Settings
 import java.io.File
 import java.security.MessageDigest
+import java.util.concurrent.TimeUnit
 
 internal class AndroidSecurityDetector(private val context: Context) {
     fun assess(expectedCertificates: Set<String>): Map<String, Map<String, String>> =
@@ -59,7 +60,11 @@ internal class AndroidSecurityDetector(private val context: Context) {
     }
 
     private fun hooking(): SignalResult {
-        val maps = File("/proc/self/maps").takeIf(File::canRead)?.readText().orEmpty()
+        val mapsFile = File("/proc/self/maps")
+        val maps =
+            mapsFile.takeIf(File::canRead)?.let { file ->
+                runCatching(file::readText).getOrNull()
+            }
         val loadedFrameworks =
             listOf(
                 "de.robv.android.xposed.XposedBridge",
@@ -67,8 +72,12 @@ internal class AndroidSecurityDetector(private val context: Context) {
             ).filter { className ->
                 runCatching { Class.forName(className) }.isSuccess
             }
-        val value = AndroidSignalClassifier.hooking(maps + loadedFrameworks.joinToString())
-        return value.result("hook_framework_detected", "hook_framework_not_detected")
+        val value = AndroidSignalClassifier.hooking(maps, loadedFrameworks.toSet())
+        return value.result(
+            "hook_framework_detected",
+            "hook_framework_not_detected",
+            "process_maps_unavailable",
+        )
     }
 
     private fun repackaging(expectedCertificates: Set<String>): SignalResult {
@@ -155,10 +164,15 @@ internal class AndroidSecurityDetector(private val context: Context) {
 
     private fun systemProperty(name: String): String? =
         runCatching {
-            ProcessBuilder("/system/bin/getprop", name)
+            val process =
+                ProcessBuilder("/system/bin/getprop", name)
                 .redirectErrorStream(true)
                 .start()
-                .inputStream
+            if (!process.waitFor(500, TimeUnit.MILLISECONDS)) {
+                process.destroyForcibly()
+                return@runCatching null
+            }
+            process.inputStream
                 .bufferedReader()
                 .use { it.readLine()?.trim()?.takeIf(String::isNotEmpty) }
         }.getOrNull()
