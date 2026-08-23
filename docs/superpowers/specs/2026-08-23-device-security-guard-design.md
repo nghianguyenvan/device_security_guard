@@ -69,7 +69,7 @@ final decision = Circular77Policy.evaluate(assessment);
 - một `AttestationAdapter` tùy chọn; và
 - các tùy chọn detector độc lập với policy, chỉ được phép giảm những kiểm tra không bắt buộc và không được âm thầm biến một kiểm tra thất bại thành kết quả an toàn.
 
-Nếu bật một attestation provider nhưng thiếu adapter hoặc cấu hình bắt buộc, kết quả attestation sẽ chứa lỗi cấu hình. Trường hợp này không bao giờ trả về verdict đáng tin cậy.
+Nếu bật một attestation provider nhưng thiếu adapter hoặc cấu hình bắt buộc, API thất bại sớm bằng `ArgumentError` trước khi chạy native.
 
 ## Mô hình bảo mật
 
@@ -96,21 +96,17 @@ Play Integrity và App Attest không phải tín hiệu bảo mật. Chúng là 
 enum CheckStatus {
   detected,
   notDetected,
-  unknown,
-  unsupported,
-  notApplicable,
-  error,
+  inconclusive,
 }
 ```
 
 - `detected`: bằng chứng cho thấy rủi ro đang tồn tại.
 - `notDetected`: kiểm tra đã hoàn tất và không phát hiện rủi ro.
-- `unknown`: không đủ bằng chứng để kết luận.
-- `unsupported`: tín hiệu có áp dụng trên nền tảng nhưng hệ điều hành hoặc thiết bị không thể thực hiện kiểm tra.
-- `notApplicable`: tín hiệu không áp dụng trên nền tảng, ví dụ ADB trên iOS hoặc jailbreak trên Android.
-- `error`: detector gặp lỗi ngoài dự kiến.
+- `inconclusive`: không đủ bằng chứng để kết luận, bao gồm trường hợp thiết bị không hỗ trợ hoặc detector gặp lỗi.
 
-`notApplicable` là trạng thái trung lập khi đánh giá policy. `unknown`, `unsupported` và `error` không bao giờ được xem là bằng chứng an toàn.
+Mỗi `SignalResult` có một `reasonCode` ngắn để giải thích nguyên nhân, ví dụ `unsupported_os` hoặc `detector_error`. Tín hiệu không áp dụng trên nền tảng sẽ không xuất hiện trong kết quả.
+
+Dart biết danh sách tín hiệu bắt buộc của từng nền tảng. Nếu native bỏ thiếu một tín hiệu bắt buộc, Dart tạo kết quả `inconclusive` với `reasonCode` là `missing_signal`; không được phép mặc định là an toàn.
 
 ### Kết quả đánh giá
 
@@ -118,7 +114,7 @@ enum CheckStatus {
 
 - thông tin nền tảng và phiên bản hệ điều hành;
 - thời điểm thực hiện đánh giá;
-- một `SignalResult` cho mỗi `SecuritySignal`;
+- một `SignalResult` cho mỗi tín hiệu áp dụng trên nền tảng;
 - không hoặc nhiều `AttestationAssessment`; và
 - các mã nguyên nhân chẩn đoán đã được làm sạch.
 
@@ -132,14 +128,11 @@ Trạng thái attestation được tách khỏi trạng thái tín hiệu cục 
 enum AttestationStatus {
   trusted,
   untrusted,
-  unknown,
-  disabled,
-  unsupported,
-  error,
+  inconclusive,
 }
 ```
 
-`AttestationAssessment` xác định provider, trạng thái chuẩn hóa và các mã nguyên nhân. Kết quả chỉ được chấp nhận là `trusted` sau khi backend của ứng dụng chủ đã xác minh artifact của provider, tính ràng buộc với request, độ mới, danh tính ứng dụng mong đợi và các trường verdict bắt buộc.
+`AttestationAssessment` xác định provider, trạng thái chuẩn hóa và `reasonCode`. Provider đang tắt không tạo kết quả attestation. Kết quả chỉ được chấp nhận là `trusted` sau khi backend của ứng dụng chủ đã xác minh artifact của provider, tính ràng buộc với request, độ mới, danh tính ứng dụng mong đợi và các trường verdict bắt buộc.
 
 Package cung cấp các primitive phía client để yêu cầu Play Integrity token, đồng thời hỗ trợ vòng đời key, attestation và assertion của App Attest. `AttestationAdapter` do ứng dụng chủ triển khai sẽ chịu trách nhiệm lấy challenge, giao tiếp với backend và chuyển phản hồi máy chủ thành kết quả attestation chuẩn hóa. Package không chứa service-account credential, secret phía Apple hoặc backend production.
 
@@ -159,9 +152,9 @@ enum RecommendedAction {
 
 - Nếu bất kỳ tín hiệu áp dụng nào thuộc Thông tư 77 có trạng thái `detected`, khuyến nghị `block`.
 - Nếu attestation đã bật trả về `untrusted`, khuyến nghị `block`.
-- Nếu một kiểm tra áp dụng có trạng thái `unknown`, `unsupported` hoặc `error`, khuyến nghị `indeterminate`, trừ khi một kết quả khác đã yêu cầu `block`.
-- Nếu attestation đã bật nhưng thiếu kết quả, không hợp lệ, hoặc có trạng thái `unknown`, `unsupported`, `error`, khuyến nghị `indeterminate`, trừ khi một kết quả khác đã yêu cầu `block`.
-- Nếu tất cả kiểm tra cục bộ áp dụng đều là `notDetected`, các kiểm tra không áp dụng đều là `notApplicable`, và mọi attestation provider đã bật đều là `trusted`, khuyến nghị `allow`.
+- Nếu một kiểm tra áp dụng hoặc attestation có trạng thái `inconclusive`, khuyến nghị `indeterminate`, trừ khi một kết quả khác đã yêu cầu `block`.
+- Nếu thiếu kết quả của attestation provider đã bật, khuyến nghị `indeterminate`, trừ khi một kết quả khác đã yêu cầu `block`.
+- Nếu tất cả kiểm tra cục bộ áp dụng đều là `notDetected` và mọi attestation provider đã bật đều là `trusted`, khuyến nghị `allow`.
 
 Tùy chọn policy `failClosed` chuyển khuyến nghị `indeterminate` thành `block`. Tùy chọn này không thay đổi dữ liệu đánh giá gốc.
 
@@ -181,7 +174,7 @@ Các detector Kotlin độc lập bao phủ:
 - các artifact root và dấu hiệu hệ thống bị can thiệp thường gặp; và
 - trạng thái verified boot và bootloader khi có thể truy cập.
 
-Tín hiệu jailbreak trả về `notApplicable` trên Android.
+Android không trả về tín hiệu jailbreak vì tín hiệu này không áp dụng trên nền tảng.
 
 ### iOS
 
@@ -193,7 +186,7 @@ Các detector Swift độc lập bao phủ:
 - danh tính ứng dụng không khớp danh sách Team identifier đã cấu hình; và
 - artifact jailbreak, hành vi vượt sandbox và các dấu hiệu liên quan.
 
-Các tín hiệu ADB, Android root và Android bootloader trả về `notApplicable` trên iOS.
+iOS không trả về các tín hiệu ADB, Android root và Android bootloader vì chúng không áp dụng trên nền tảng.
 
 Mỗi detector cục bộ về root, jailbreak, hook, emulator và can thiệp ứng dụng chỉ là một lớp phòng vệ theo nguyên tắc defense in depth và có tính best-effort. Kiểm tra phía client có thể bị bypass khi ứng dụng hoặc hệ điều hành đã bị xâm phạm đủ sâu. Tài liệu phải nêu rõ giới hạn này và khuyến nghị attestation được backend xác minh khi cần độ tin cậy cao hơn.
 
@@ -219,10 +212,10 @@ Mỗi detector cục bộ về root, jailbreak, hook, emulator và can thiệp �
 
 ## Xử lý lỗi
 
-- Cấu hình Dart không hợp lệ thất bại sớm bằng typed configuration exception trước khi chạy native.
-- Mỗi native detector tự xử lý lỗi dự kiến và trả về `unknown`, `unsupported` hoặc `error` cùng mã nguyên nhân ổn định.
+- Cấu hình Dart không hợp lệ thất bại sớm bằng `ArgumentError` trước khi chạy native.
+- Mỗi native detector tự xử lý lỗi và trả về `inconclusive` cùng `reasonCode` ổn định khi không thể kết luận.
 - Lỗi của một detector không làm mất kết quả thành công từ detector khác.
-- Payload platform channel sai định dạng hoặc không tương thích version trở thành typed protocol error, không trở thành kết quả an toàn.
+- Payload platform channel sai định dạng hoặc không tương thích version trở thành `PlatformException`, không trở thành kết quả an toàn.
 - Timeout, throttling, lỗi mạng, phản hồi backend không hợp lệ và provider service không khả dụng không bao giờ trở thành `trusted`.
 - Không ghi log raw provider token hoặc assertion.
 
