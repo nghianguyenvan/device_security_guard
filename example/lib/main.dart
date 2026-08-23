@@ -12,11 +12,34 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   String _status = 'Chưa kiểm tra';
   List<String> _details = const [];
+  bool _isChecking = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) runAssessment();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) runAssessment();
+  }
 
   Future<void> runAssessment() async {
+    if (_isChecking) return;
+    setState(() => _isChecking = true);
     try {
       final assessment = await DeviceSecurityGuard.assess();
       final decision = Circular77Policy.evaluate(assessment);
@@ -37,6 +60,8 @@ class _MyAppState extends State<MyApp> {
         _status = 'Không thể hoàn tất kiểm tra';
         _details = const [];
       });
+    } finally {
+      if (mounted) setState(() => _isChecking = false);
     }
   }
 
@@ -52,8 +77,10 @@ class _MyAppState extends State<MyApp> {
             Text(_status, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
             FilledButton(
-              onPressed: runAssessment,
-              child: const Text('Kiểm tra thiết bị'),
+              onPressed: _isChecking ? null : runAssessment,
+              child: Text(
+                _isChecking ? 'Đang kiểm tra...' : 'Kiểm tra trước giao dịch',
+              ),
             ),
             const SizedBox(height: 24),
             for (final detail in _details)

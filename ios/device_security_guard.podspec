@@ -11,7 +11,7 @@ Detects rooted, jailbroken, hooked, debugged, emulated, repackaged, and unlocked
   s.source           = { :path => '.' }
   s.source_files = 'device_security_guard/Sources/device_security_guard/**/*.swift'
   s.dependency 'Flutter'
-  s.frameworks = 'Security', 'DeviceCheck'
+  s.frameworks = 'Security'
   s.platform = :ios, '15.0'
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',

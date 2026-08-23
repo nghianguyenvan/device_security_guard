@@ -14,19 +14,12 @@ Tài liệu này ánh xạ các detector của `device_security_guard` với nh�
 | Root/jailbreak | build tags, root artifacts và system properties | jailbreak artifacts và thử ghi ngoài sandbox | `inconclusive` khi detector lỗi; jailbreak trên simulator không được coi là an toàn |
 | Bootloader mở khóa | verified boot, flash lock và vbmeta state | Không áp dụng | `inconclusive` nếu không có trạng thái nhận diện được |
 
-## Attestation tùy chọn
-
-- Play Integrity là nguồn chứng thực riêng, không phải một `SecuritySignal`. Package chỉ tạo Standard Integrity token gắn với `requestHash`.
-- App Attest là nguồn chứng thực riêng. Package chỉ cung cấp kiểm tra hỗ trợ, tạo key, attestation và assertion.
-- Chỉ backend ứng dụng chủ được phép kết luận `trusted` sau khi xác minh artifact, challenge dùng một lần, độ mới, định danh ứng dụng và verdict/counter bắt buộc.
-- Provider tắt mặc định và không tạo kết quả attestation.
-
 ## Quy tắc policy mặc định
 
-- Có ít nhất một `detected` hoặc attestation `untrusted`: `block`.
+- Có ít nhất một `detected`: `block`.
 - Không có bằng chứng chặn nhưng có `inconclusive`: `indeterminate`.
 - `failClosed: true`: chuyển `indeterminate` thành `block`.
-- Chỉ `allow` khi mọi tín hiệu áp dụng đều `notDetected` và mọi attestation đã bật đều `trusted`.
+- Chỉ `allow` khi mọi tín hiệu áp dụng đều `notDetected`.
 
 ## Giới hạn
 

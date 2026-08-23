@@ -19,42 +19,4 @@ void main() {
 
     expect(assessment.signals, isEmpty);
   });
-
-  test('assessment protects its attestation results from source mutation', () {
-    final source = <AttestationAssessment>[];
-    final assessment = SecurityAssessment(
-      platform: SecurityPlatform.android,
-      operatingSystemVersion: '16',
-      assessedAt: DateTime.utc(2026),
-      signals: const {},
-      attestations: source,
-    );
-
-    source.add(
-      const AttestationAssessment(
-        provider: AttestationProvider.playIntegrity,
-        status: AttestationStatus.trusted,
-        reasonCode: 'backend_verified',
-      ),
-    );
-
-    expect(assessment.attestations, isEmpty);
-  });
-
-  test('assessment protects requested attestations from source mutation', () {
-    final source = <AttestationProvider>{AttestationProvider.playIntegrity};
-    final assessment = SecurityAssessment(
-      platform: SecurityPlatform.android,
-      operatingSystemVersion: '16',
-      assessedAt: DateTime.utc(2026),
-      signals: const {},
-      requestedAttestations: source,
-    );
-
-    source.clear();
-
-    expect(assessment.requestedAttestations, {
-      AttestationProvider.playIntegrity,
-    });
-  });
 }

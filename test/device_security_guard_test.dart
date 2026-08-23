@@ -30,31 +30,6 @@ final class FakePlatform extends DeviceSecurityGuardPlatform {
   }
 }
 
-final class RecordingAdapter implements AttestationAdapter {
-  final calls = <AttestationProvider>[];
-
-  @override
-  Future<AttestationAssessment> assess(
-    AttestationProvider provider,
-    AttestationClient client,
-  ) async {
-    calls.add(provider);
-    return AttestationAssessment(
-      provider: provider,
-      status: AttestationStatus.trusted,
-      reasonCode: 'backend_verified',
-    );
-  }
-}
-
-final class ThrowingAdapter implements AttestationAdapter {
-  @override
-  Future<AttestationAssessment> assess(
-    AttestationProvider provider,
-    AttestationClient client,
-  ) => throw StateError('network failed');
-}
-
 void main() {
   late DeviceSecurityGuardPlatform initialPlatform;
 
@@ -66,63 +41,16 @@ void main() {
     DeviceSecurityGuardPlatform.instance = initialPlatform;
   });
 
-  test('attestation is disabled by default', () async {
+  test('each assessment delegates to the local platform', () async {
     final platform = FakePlatform(SecurityPlatform.android);
     DeviceSecurityGuardPlatform.instance = platform;
 
-    final result = await DeviceSecurityGuard.assess();
+    final first = await DeviceSecurityGuard.assess();
+    final second = await DeviceSecurityGuard.assess();
 
-    expect(result.attestations, isEmpty);
-    expect(platform.localAssessmentCalls, 1);
-  });
-
-  test('Android invokes only enabled Play Integrity adapter', () async {
-    final adapter = RecordingAdapter();
-    DeviceSecurityGuardPlatform.instance = FakePlatform(
-      SecurityPlatform.android,
-    );
-
-    final result = await DeviceSecurityGuard.assess(
-      options: SecurityOptions(
-        enablePlayIntegrity: true,
-        enableAppAttest: true,
-        attestationAdapter: adapter,
-      ),
-    );
-
-    expect(adapter.calls, [AttestationProvider.playIntegrity]);
-    expect(result.attestations.single.status, AttestationStatus.trusted);
-  });
-
-  test('iOS invokes only enabled App Attest adapter', () async {
-    final adapter = RecordingAdapter();
-    DeviceSecurityGuardPlatform.instance = FakePlatform(SecurityPlatform.iOS);
-
-    await DeviceSecurityGuard.assess(
-      options: SecurityOptions(
-        enablePlayIntegrity: true,
-        enableAppAttest: true,
-        attestationAdapter: adapter,
-      ),
-    );
-
-    expect(adapter.calls, [AttestationProvider.appAttest]);
-  });
-
-  test('adapter failure becomes inconclusive evidence', () async {
-    DeviceSecurityGuardPlatform.instance = FakePlatform(
-      SecurityPlatform.android,
-    );
-
-    final result = await DeviceSecurityGuard.assess(
-      options: SecurityOptions(
-        enablePlayIntegrity: true,
-        attestationAdapter: ThrowingAdapter(),
-      ),
-    );
-
-    expect(result.attestations.single.status, AttestationStatus.inconclusive);
-    expect(result.attestations.single.reasonCode, 'attestation_error');
+    expect(first.platform, SecurityPlatform.android);
+    expect(second.platform, SecurityPlatform.android);
+    expect(platform.localAssessmentCalls, 2);
   });
 
   test('invalid identity fails before invoking native assessment', () async {

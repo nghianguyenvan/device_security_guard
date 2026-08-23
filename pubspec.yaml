@@ -6,7 +6,6 @@ topics:
   - security
   - root-detection
   - jailbreak-detection
-  - attestation
   - banking
 
 environment:

@@ -72,7 +72,6 @@ kotlin {
 }
 
 dependencies {
-    implementation("com.google.android.play:integrity:1.6.0")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.mockito:mockito-core:5.0.0")
 }

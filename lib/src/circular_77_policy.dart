@@ -11,9 +11,6 @@ abstract final class Circular77Policy {
       ...assessment.signals.values
           .where((result) => result.status == CheckStatus.detected)
           .map((result) => result.reasonCode),
-      ...assessment.attestations
-          .where((result) => result.status == AttestationStatus.untrusted)
-          .map((result) => result.reasonCode),
     ];
     if (blocked.isNotEmpty) {
       return PolicyDecision(
@@ -27,17 +24,8 @@ abstract final class Circular77Policy {
         assessment.platform,
       ).any((signal) => !assessment.signals.containsKey(signal)))
         'missing_signal',
-      if (assessment.requestedAttestations.any(
-        (provider) => !assessment.attestations.any(
-          (result) => result.provider == provider,
-        ),
-      ))
-        'missing_attestation',
       ...assessment.signals.values
           .where((result) => result.status == CheckStatus.inconclusive)
-          .map((result) => result.reasonCode),
-      ...assessment.attestations
-          .where((result) => result.status == AttestationStatus.inconclusive)
           .map((result) => result.reasonCode),
     ];
     if (inconclusive.isNotEmpty) {

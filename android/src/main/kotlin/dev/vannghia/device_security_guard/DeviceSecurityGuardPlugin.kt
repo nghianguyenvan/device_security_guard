@@ -16,13 +16,11 @@ class DeviceSecurityGuardPlugin :
     MethodCallHandler {
     private lateinit var channel: MethodChannel
     private var detector: AndroidSecurityDetector? = null
-    private var playIntegrityClient: PlayIntegrityClient? = null
     private val mainHandler = Handler(Looper.getMainLooper())
     private var detectorExecutor: ExecutorService? = null
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         detector = AndroidSecurityDetector(flutterPluginBinding.applicationContext)
-        playIntegrityClient = PlayIntegrityClient(flutterPluginBinding.applicationContext)
         detectorExecutor = Executors.newSingleThreadExecutor()
         channel =
             MethodChannel(
@@ -61,7 +59,6 @@ class DeviceSecurityGuardPlugin :
                     mainHandler.post { result.success(payload) }
                 }
             }
-            "requestPlayIntegrityToken" -> requestPlayIntegrityToken(call, result)
             else -> result.notImplemented()
         }
     }
@@ -69,30 +66,7 @@ class DeviceSecurityGuardPlugin :
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
         detector = null
-        playIntegrityClient = null
         detectorExecutor?.shutdownNow()
         detectorExecutor = null
-    }
-
-    private fun requestPlayIntegrityToken(call: MethodCall, result: Result) {
-        val cloudProjectNumber = call.argument<Number>("cloudProjectNumber")?.toLong()
-        val requestHash = call.argument<String>("requestHash")
-        val client = playIntegrityClient
-        if (cloudProjectNumber == null || cloudProjectNumber <= 0 || requestHash.isNullOrBlank()) {
-            result.error("invalid_arguments", "Cloud project number and request hash are required", null)
-            return
-        }
-        if (client == null) {
-            result.error("not_attached", "Plugin is not attached to an engine", null)
-            return
-        }
-        client.requestToken(
-            cloudProjectNumber = cloudProjectNumber,
-            requestHash = requestHash,
-            onSuccess = result::success,
-            onFailure = { _ ->
-                result.error("play_integrity_error", "Play Integrity request failed", null)
-            },
-        )
     }
 }

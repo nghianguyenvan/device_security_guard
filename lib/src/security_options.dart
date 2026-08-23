@@ -1,13 +1,8 @@
-import 'attestation.dart';
-
 /// Cấu hình cho một lần đánh giá bảo mật thiết bị.
 final class SecurityOptions {
   SecurityOptions({
-    this.enablePlayIntegrity = false,
-    this.enableAppAttest = false,
     Set<String> expectedAndroidCertificateSha256 = const {},
     Set<String> expectedIosApplicationIdentifierPrefixes = const {},
-    this.attestationAdapter,
   }) : expectedAndroidCertificateSha256 = Set.unmodifiable(
          expectedAndroidCertificateSha256,
        ),
@@ -15,21 +10,11 @@ final class SecurityOptions {
          expectedIosApplicationIdentifierPrefixes,
        );
 
-  final bool enablePlayIntegrity;
-  final bool enableAppAttest;
   final Set<String> expectedAndroidCertificateSha256;
 
   /// App ID Prefix đứng trước dấu chấm trong Keychain access group của app iOS.
   final Set<String> expectedIosApplicationIdentifierPrefixes;
-  final AttestationAdapter? attestationAdapter;
-
   void validate() {
-    if ((enablePlayIntegrity || enableAppAttest) &&
-        attestationAdapter == null) {
-      throw ArgumentError(
-        'An AttestationAdapter is required when attestation is enabled.',
-      );
-    }
     final certificatePattern = RegExp(
       r'^(?:[0-9A-Fa-f]{64}|(?:[0-9A-Fa-f]{2}:){31}[0-9A-Fa-f]{2})$',
     );
