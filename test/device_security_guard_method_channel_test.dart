@@ -110,4 +110,46 @@ void main() {
       'requestHash': 'base64url-request-hash',
     });
   });
+
+  test('exposes App Attest primitives over the native channel', () async {
+    final calls = <MethodCall>[];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          calls.add(call);
+          return switch (call.method) {
+            'isAppAttestSupported' => true,
+            'generateAppAttestKey' => 'key-id',
+            'attestAppAttestKey' => Uint8List.fromList([1, 2]),
+            'generateAppAttestAssertion' => Uint8List.fromList([3, 4]),
+            _ => null,
+          };
+        });
+
+    expect(await platform.isAppAttestSupported(), isTrue);
+    expect(await platform.generateAppAttestKey(), 'key-id');
+    expect(
+      await platform.attestAppAttestKey(
+        keyId: 'key-id',
+        clientDataHash: Uint8List.fromList([5, 6]),
+      ),
+      [1, 2],
+    );
+    expect(
+      await platform.generateAppAttestAssertion(
+        keyId: 'key-id',
+        clientDataHash: Uint8List.fromList([7, 8]),
+      ),
+      [3, 4],
+    );
+    expect(calls.map((call) => call.method), [
+      'isAppAttestSupported',
+      'generateAppAttestKey',
+      'attestAppAttestKey',
+      'generateAppAttestAssertion',
+    ]);
+    expect(calls[2].arguments, {
+      'keyId': 'key-id',
+      'clientDataHash': Uint8List.fromList([5, 6]),
+    });
+  });
 }

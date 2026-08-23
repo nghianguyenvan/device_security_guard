@@ -44,6 +44,68 @@ class MethodChannelDeviceSecurityGuard extends DeviceSecurityGuardPlatform {
     return token;
   }
 
+  @override
+  Future<bool> isAppAttestSupported() async {
+    final supported = await methodChannel.invokeMethod<bool>(
+      'isAppAttestSupported',
+    );
+    if (supported == null) {
+      throw PlatformException(
+        code: 'invalid_app_attest_response',
+        message: 'App Attest support response is invalid.',
+      );
+    }
+    return supported;
+  }
+
+  @override
+  Future<String> generateAppAttestKey() async {
+    final keyId = await methodChannel.invokeMethod<String>(
+      'generateAppAttestKey',
+    );
+    if (keyId == null || keyId.isEmpty) {
+      throw PlatformException(
+        code: 'invalid_app_attest_response',
+        message: 'App Attest returned an empty key identifier.',
+      );
+    }
+    return keyId;
+  }
+
+  @override
+  Future<Uint8List> attestAppAttestKey({
+    required String keyId,
+    required Uint8List clientDataHash,
+  }) async {
+    final value = await methodChannel.invokeMethod<Uint8List>(
+      'attestAppAttestKey',
+      <String, Object?>{'keyId': keyId, 'clientDataHash': clientDataHash},
+    );
+    return _requireAppAttestData(value);
+  }
+
+  @override
+  Future<Uint8List> generateAppAttestAssertion({
+    required String keyId,
+    required Uint8List clientDataHash,
+  }) async {
+    final value = await methodChannel.invokeMethod<Uint8List>(
+      'generateAppAttestAssertion',
+      <String, Object?>{'keyId': keyId, 'clientDataHash': clientDataHash},
+    );
+    return _requireAppAttestData(value);
+  }
+
+  Uint8List _requireAppAttestData(Uint8List? value) {
+    if (value == null || value.isEmpty) {
+      throw PlatformException(
+        code: 'invalid_app_attest_response',
+        message: 'App Attest returned empty data.',
+      );
+    }
+    return value;
+  }
+
   SecurityAssessment _parseAssessment(Object? payload) {
     try {
       if (payload is! Map || payload['schemaVersion'] != 1) {
