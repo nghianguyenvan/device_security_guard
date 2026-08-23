@@ -1,5 +1,5 @@
 PODS:
-  - device_security_guard (0.0.1):
+  - device_security_guard (0.1.0):
     - Flutter
   - Flutter (1.0.0)
   - integration_test (0.0.1):
@@ -19,7 +19,7 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/integration_test/ios"
 
 SPEC CHECKSUMS:
-  device_security_guard: 73d22bf86d56e2d8e2381e95377426e4d7592411
+  device_security_guard: 834f32c2fa62740533a1efd99631d7d00b743f2f
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
 

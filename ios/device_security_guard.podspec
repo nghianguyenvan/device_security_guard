@@ -1,29 +1,25 @@
-#
-# To learn more about a Podspec see http://guides.cocoapods.org/syntax/podspec.html.
-# Run `pod lib lint device_security_guard.podspec` to validate before publishing.
-#
 Pod::Spec.new do |s|
   s.name             = 'device_security_guard'
-  s.version          = '0.0.1'
-  s.summary          = 'A new Flutter plugin project.'
+  s.version          = '0.1.0'
+  s.summary          = 'Device security signals and policy helpers for Flutter.'
   s.description      = <<-DESC
-A new Flutter plugin project.
+Detects rooted, jailbroken, hooked, debugged, emulated, repackaged, and unlocked environments.
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://pub.dev/packages/device_security_guard'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Your Company' => 'email@example.com' }
+  s.author           = 'Van Nghia'
   s.source           = { :path => '.' }
   s.source_files = 'device_security_guard/Sources/device_security_guard/**/*'
   s.dependency 'Flutter'
   s.platform = :ios, '15.0'
-
-  # Flutter.framework does not contain a i386 slice.
-  s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }
+  s.pod_target_xcconfig = {
+    'DEFINES_MODULE' => 'YES',
+    'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386'
+  }
   s.swift_version = '5.0'
-
-  # If your plugin requires a privacy manifest, for example if it uses any
-  # required reason APIs, update the PrivacyInfo.xcprivacy file to describe your
-  # plugin's privacy impact, and then uncomment this line. For more information,
-  # see https://developer.apple.com/documentation/bundleresources/privacy_manifest_files
-  # s.resource_bundles = {'device_security_guard_privacy' => ['device_security_guard/Sources/device_security_guard/PrivacyInfo.xcprivacy']}
+  s.resource_bundles = {
+    'device_security_guard_privacy' => [
+      'device_security_guard/Sources/device_security_guard/PrivacyInfo.xcprivacy'
+    ]
+  }
 end

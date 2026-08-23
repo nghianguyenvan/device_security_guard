@@ -1,17 +1,11 @@
-# device_security_guard_example
+# Ví dụ device_security_guard
 
-Demonstrates how to use the device_security_guard plugin.
+Ứng dụng minh họa chạy local assessment với attestation mặc định tắt, hiển thị từng tín hiệu và khuyến nghị của `Circular77Policy`.
 
-## Getting Started
+Chạy bằng:
 
-This project is a starting point for a Flutter application.
+```bash
+flutter run
+```
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Để kiểm tra repackage chính xác trong ứng dụng thực, hãy cấu hình SHA-256 certificate Android hoặc Team ID iOS qua `SecurityOptions`. Xem README ở thư mục gốc để tích hợp Play Integrity/App Attest với backend.

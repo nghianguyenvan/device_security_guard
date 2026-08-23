@@ -10,7 +10,7 @@ export 'src/circular_77_policy.dart';
 export 'src/models.dart';
 export 'src/security_options.dart';
 
-/// Entry point for local device assessment and optional attestation.
+/// Điểm truy cập cho đánh giá thiết bị cục bộ và attestation tùy chọn.
 abstract final class DeviceSecurityGuard {
   static Future<SecurityAssessment> assess({
     SecurityOptions options = const SecurityOptions(),

@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'models.dart';
 
-/// Connects platform attestation primitives to the host application's backend.
+/// Kết nối primitive attestation của nền tảng với backend ứng dụng chủ.
 abstract interface class AttestationAdapter {
   Future<AttestationAssessment> assess(
     AttestationProvider provider,
@@ -10,7 +10,7 @@ abstract interface class AttestationAdapter {
   );
 }
 
-/// Client-side primitives used by a host-provided [AttestationAdapter].
+/// Primitive phía client dành cho [AttestationAdapter] do ứng dụng chủ cung cấp.
 abstract interface class AttestationClient {
   Future<String> requestPlayIntegrityToken({
     required int cloudProjectNumber,

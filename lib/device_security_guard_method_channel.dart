@@ -4,9 +4,9 @@ import 'device_security_guard_platform_interface.dart';
 import 'src/models.dart';
 import 'src/security_options.dart';
 
-/// An implementation of [DeviceSecurityGuardPlatform] that uses method channels.
+/// Cài đặt [DeviceSecurityGuardPlatform] bằng method channel.
 class MethodChannelDeviceSecurityGuard extends DeviceSecurityGuardPlatform {
-  /// The method channel used to interact with the native platform.
+  /// Method channel dùng để giao tiếp với nền tảng native.
   final methodChannel = const MethodChannel(
     'dev.vannghia/device_security_guard',
   );

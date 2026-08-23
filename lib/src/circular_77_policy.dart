@@ -1,6 +1,6 @@
 import 'models.dart';
 
-/// Policy helper aligned with the device-side signs in Circular 77/2025.
+/// Policy helper cho các dấu hiệu phía thiết bị trong Thông tư 77/2025/TT-NHNN.
 abstract final class Circular77Policy {
   static PolicyDecision evaluate(
     SecurityAssessment assessment, {

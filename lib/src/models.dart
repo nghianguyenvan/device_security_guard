@@ -1,6 +1,6 @@
 import 'dart:collection';
 
-/// A security-relevant condition covered by the package.
+/// Dấu hiệu bảo mật được package kiểm tra.
 enum SecuritySignal {
   debugger,
   emulator,
@@ -12,22 +12,22 @@ enum SecuritySignal {
   bootloaderUnlocked,
 }
 
-/// The deliberately small result space for a local security check.
+/// Trạng thái của một kiểm tra bảo mật cục bộ.
 enum CheckStatus { detected, notDetected, inconclusive }
 
-/// A host platform supported by the plugin.
+/// Nền tảng được plugin hỗ trợ.
 enum SecurityPlatform { android, iOS }
 
-/// A platform attestation provider.
+/// Nhà cung cấp attestation của nền tảng.
 enum AttestationProvider { playIntegrity, appAttest }
 
-/// The server-verified outcome of platform attestation.
+/// Kết quả attestation do backend ứng dụng chủ xác minh.
 enum AttestationStatus { trusted, untrusted, inconclusive }
 
-/// The action recommended by a policy evaluation.
+/// Hành động được policy khuyến nghị.
 enum RecommendedAction { allow, block, indeterminate }
 
-/// Result of checking one [signal].
+/// Kết quả kiểm tra một [signal].
 final class SignalResult {
   const SignalResult({
     required this.signal,
@@ -40,7 +40,7 @@ final class SignalResult {
   final String reasonCode;
 }
 
-/// Normalized result returned by a host-provided attestation adapter.
+/// Kết quả chuẩn hóa do attestation adapter của ứng dụng chủ trả về.
 final class AttestationAssessment {
   const AttestationAssessment({
     required this.provider,
@@ -53,7 +53,7 @@ final class AttestationAssessment {
   final String reasonCode;
 }
 
-/// A point-in-time assessment of the current app and device environment.
+/// Kết quả đánh giá ứng dụng và môi trường thiết bị tại một thời điểm.
 final class SecurityAssessment {
   SecurityAssessment({
     required this.platform,
@@ -80,7 +80,7 @@ final class SecurityAssessment {
       );
 }
 
-/// Result of evaluating a [SecurityAssessment] against a policy.
+/// Kết quả áp dụng policy lên một [SecurityAssessment].
 final class PolicyDecision {
   PolicyDecision({required this.action, required List<String> reasonCodes})
     : reasonCodes = List.unmodifiable(reasonCodes);

@@ -1,3 +1,1 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-  package="dev.vannghia.device_security_guard">
-</manifest>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />

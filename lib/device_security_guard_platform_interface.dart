@@ -9,7 +9,7 @@ import 'src/security_options.dart';
 
 abstract class DeviceSecurityGuardPlatform extends PlatformInterface
     implements AttestationClient {
-  /// Constructs a DeviceSecurityGuardPlatform.
+  /// Khởi tạo platform interface.
   DeviceSecurityGuardPlatform() : super(token: _token);
 
   static final Object _token = Object();
@@ -35,14 +35,12 @@ abstract class DeviceSecurityGuardPlatform extends PlatformInterface
     SecuritySignal.jailbreak,
   };
 
-  /// The default instance of [DeviceSecurityGuardPlatform] to use.
+  /// Instance [DeviceSecurityGuardPlatform] đang được sử dụng.
   ///
-  /// Defaults to [MethodChannelDeviceSecurityGuard].
+  /// Mặc định là [MethodChannelDeviceSecurityGuard].
   static DeviceSecurityGuardPlatform get instance => _instance;
 
-  /// Platform-specific implementations should set this with their own
-  /// platform-specific class that extends [DeviceSecurityGuardPlatform] when
-  /// they register themselves.
+  /// Cho phép implementation của nền tảng đăng ký instance riêng.
   static set instance(DeviceSecurityGuardPlatform instance) {
     PlatformInterface.verifyToken(instance, _token);
     _instance = instance;

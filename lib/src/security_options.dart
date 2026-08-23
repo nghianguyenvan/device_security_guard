@@ -1,6 +1,6 @@
 import 'attestation.dart';
 
-/// Configuration for a device security assessment.
+/// Cấu hình cho một lần đánh giá bảo mật thiết bị.
 final class SecurityOptions {
   const SecurityOptions({
     this.enablePlayIntegrity = false,
