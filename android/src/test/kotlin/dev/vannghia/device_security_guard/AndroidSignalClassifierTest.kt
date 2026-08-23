@@ -18,7 +18,7 @@ internal class AndroidSignalClassifierTest {
                     product = "sdk_gphone64_arm64",
                     hardware = "ranchu",
                 ),
-                qemu = "1",
+                qemu = SystemPropertyRead.Value("1"),
             ),
         )
     }
@@ -37,7 +37,7 @@ internal class AndroidSignalClassifierTest {
                     product = "husky",
                     hardware = "tensor",
                 ),
-                qemu = "0",
+                qemu = SystemPropertyRead.Value("0"),
             ),
         )
     }
@@ -65,8 +65,8 @@ internal class AndroidSignalClassifierTest {
             AndroidSignalClassifier.root(
                 buildTags = "release-keys",
                 existingArtifacts = setOf("su"),
-                debuggable = "0",
-                secure = "1",
+                debuggable = SystemPropertyRead.Value("0"),
+                secure = SystemPropertyRead.Value("1"),
             ),
         )
     }
@@ -76,9 +76,9 @@ internal class AndroidSignalClassifierTest {
         assertEquals(
             CheckValue.DETECTED,
             AndroidSignalClassifier.bootloader(
-                verifiedBootState = "orange",
-                flashLocked = "0",
-                vbmetaDeviceState = "unlocked",
+                verifiedBootState = SystemPropertyRead.Value("orange"),
+                flashLocked = SystemPropertyRead.Value("0"),
+                vbmetaDeviceState = SystemPropertyRead.Value("unlocked"),
             ),
         )
     }
@@ -87,7 +87,55 @@ internal class AndroidSignalClassifierTest {
     fun unavailableBootPropertiesAreInconclusive() {
         assertEquals(
             CheckValue.INCONCLUSIVE,
-            AndroidSignalClassifier.bootloader(null, null, null),
+            AndroidSignalClassifier.bootloader(
+                SystemPropertyRead.Missing,
+                SystemPropertyRead.Missing,
+                SystemPropertyRead.Missing,
+            ),
+        )
+    }
+
+    @Test
+    fun bootPropertyReadErrorIsInconclusive() {
+        assertEquals(
+            CheckValue.INCONCLUSIVE,
+            AndroidSignalClassifier.bootloader(
+                SystemPropertyRead.Value("green"),
+                SystemPropertyRead.Error,
+                SystemPropertyRead.Value("locked"),
+            ),
+        )
+    }
+
+    @Test
+    fun propertyReadErrorMakesEmulatorInconclusiveWithoutOtherIndicator() {
+        assertEquals(
+            CheckValue.INCONCLUSIVE,
+            AndroidSignalClassifier.emulator(
+                BuildSnapshot(
+                    fingerprint = "google/husky/husky:16/release-keys",
+                    model = "Pixel 8 Pro",
+                    manufacturer = "Google",
+                    brand = "google",
+                    device = "husky",
+                    product = "husky",
+                    hardware = "tensor",
+                ),
+                qemu = SystemPropertyRead.Error,
+            ),
+        )
+    }
+
+    @Test
+    fun propertyReadErrorMakesRootInconclusiveWithoutOtherIndicator() {
+        assertEquals(
+            CheckValue.INCONCLUSIVE,
+            AndroidSignalClassifier.root(
+                buildTags = "release-keys",
+                existingArtifacts = emptySet(),
+                debuggable = SystemPropertyRead.Error,
+                secure = SystemPropertyRead.Missing,
+            ),
         )
     }
 

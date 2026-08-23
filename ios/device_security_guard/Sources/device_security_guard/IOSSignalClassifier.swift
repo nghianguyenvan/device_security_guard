@@ -24,15 +24,15 @@ internal enum IOSSignalClassifier {
   }
 
   static func repackaging(
-    actualTeamIdentifier: String?,
-    expectedTeamIdentifiers: Set<String>
+    actualApplicationIdentifierPrefix: String?,
+    expectedApplicationIdentifierPrefixes: Set<String>
   ) -> NativeCheckStatus {
-    guard !expectedTeamIdentifiers.isEmpty,
-          let actualTeamIdentifier,
-          !actualTeamIdentifier.isEmpty else {
+    guard !expectedApplicationIdentifierPrefixes.isEmpty,
+          let actualApplicationIdentifierPrefix,
+          !actualApplicationIdentifierPrefix.isEmpty else {
       return .inconclusive
     }
-    return expectedTeamIdentifiers.contains(actualTeamIdentifier)
+    return expectedApplicationIdentifierPrefixes.contains(actualApplicationIdentifierPrefix)
       ? .notDetected
       : .detected
   }

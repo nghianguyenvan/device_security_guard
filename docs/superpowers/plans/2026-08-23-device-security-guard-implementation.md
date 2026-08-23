@@ -507,18 +507,18 @@ final class SecurityOptions {
     this.enablePlayIntegrity = false,
     this.enableAppAttest = false,
     Set<String> expectedAndroidCertificateSha256 = const {},
-    Set<String> expectedIosTeamIdentifiers = const {},
+    Set<String> expectedIosApplicationIdentifierPrefixes = const {},
     this.attestationAdapter,
   }) : expectedAndroidCertificateSha256 = Set.unmodifiable(
          expectedAndroidCertificateSha256,
        ),
-       expectedIosTeamIdentifiers = Set.unmodifiable(
-         expectedIosTeamIdentifiers,
+       expectedIosApplicationIdentifierPrefixes = Set.unmodifiable(
+         expectedIosApplicationIdentifierPrefixes,
        );
   final bool enablePlayIntegrity;
   final bool enableAppAttest;
   final Set<String> expectedAndroidCertificateSha256;
-  final Set<String> expectedIosTeamIdentifiers;
+  final Set<String> expectedIosApplicationIdentifierPrefixes;
   final AttestationAdapter? attestationAdapter;
 
   void validate() {
@@ -552,7 +552,7 @@ static const iosSignals = {
 
 `DeviceSecurityGuardPlatform` implement mặc định năm method `AttestationClient` bằng `UnsupportedError`; fake platform chỉ cần override method đang được test. `instance` mặc định là `MethodChannelDeviceSecurityGuard` và có setter phục vụ test theo pattern của Flutter plugin template.
 
-`MethodChannelDeviceSecurityGuard` dùng channel `dev.vannghia/device_security_guard`, method `assess`, schema version `1`, truyền hai list `expectedAndroidCertificateSha256` và `expectedIosTeamIdentifiers`. Parser từ chối schema/platform/status không biết bằng `PlatformException(code: 'invalid_payload')`; mỗi tín hiệu bắt buộc bị thiếu được thêm dưới dạng `inconclusive/missing_signal`.
+`MethodChannelDeviceSecurityGuard` dùng channel `dev.vannghia/device_security_guard`, method `assess`, schema version `1`, truyền hai list `expectedAndroidCertificateSha256` và `expectedIosApplicationIdentifierPrefixes`. Parser từ chối schema/platform/status không biết bằng `PlatformException(code: 'invalid_payload')`; mỗi tín hiệu bắt buộc bị thiếu được thêm dưới dạng `inconclusive/missing_signal`.
 
 Facade gọi adapter chỉ theo platform thực tế:
 
@@ -957,16 +957,16 @@ final class IOSSignalClassifierTests: XCTestCase {
         )
     }
 
-    func testExpectedTeamIdentifierMatches() {
+    func testExpectedApplicationIdentifierPrefixMatches() {
         XCTAssertEqual(
-            IOSSignalClassifier.repackaging(actualTeamIdentifier: "TEAM123", expected: ["TEAM123"]),
+            IOSSignalClassifier.repackaging(actualApplicationIdentifierPrefix: "ABCDE12345", expected: ["ABCDE12345"]),
             .notDetected
         )
     }
 
-    func testMissingExpectedTeamIdentifierIsInconclusive() {
+    func testMissingExpectedApplicationIdentifierPrefixIsInconclusive() {
         XCTAssertEqual(
-            IOSSignalClassifier.repackaging(actualTeamIdentifier: "TEAM123", expected: []),
+            IOSSignalClassifier.repackaging(actualApplicationIdentifierPrefix: "ABCDE12345", expected: []),
             .inconclusive
         )
     }
@@ -998,9 +998,9 @@ enum IOSSignalClassifier {
         } ? .detected : .notDetected
     }
 
-    static func repackaging(actualTeamIdentifier: String?, expected: Set<String>) -> IOSCheckValue {
-        guard !expected.isEmpty, let actualTeamIdentifier else { return .inconclusive }
-        return expected.contains(actualTeamIdentifier) ? .notDetected : .detected
+    static func repackaging(actualApplicationIdentifierPrefix: String?, expected: Set<String>) -> IOSCheckValue {
+        guard !expected.isEmpty, let actualApplicationIdentifierPrefix else { return .inconclusive }
+        return expected.contains(actualApplicationIdentifierPrefix) ? .notDetected : .detected
     }
 }
 ```
@@ -1012,7 +1012,7 @@ enum IOSSignalClassifier {
 - debugger: `sysctl` với `KERN_PROC_PID`, kiểm tra `P_TRACED`;
 - emulator: `#if targetEnvironment(simulator)`;
 - hooking: `_dyld_image_count`, `_dyld_get_image_name`, biến môi trường `DYLD_INSERT_LIBRARIES`;
-- repackaging: đọc Keychain access group bằng Security framework công khai để suy ra Team ID của bản ký đang chạy, so với expected Team IDs; expected rỗng trả `inconclusive/expected_identity_missing`;
+- repackaging: đọc Keychain access group bằng Security framework công khai để lấy App ID Prefix của bản ký đang chạy, so với expected prefixes; expected rỗng trả `inconclusive/expected_identity_missing`;
 - jailbreak: kiểm tra các artifact `/Applications/Cydia.app`, `/Library/MobileSubstrate/MobileSubstrate.dylib`, `/bin/bash`, `/usr/sbin/sshd`, `/var/jb`, và thử tạo/xóa file tên ngẫu nhiên dưới `/private` để phát hiện vượt sandbox.
 
 Không trả đường dẫn cụ thể qua channel. Lỗi detector trả `inconclusive/detector_error`.
@@ -1031,7 +1031,7 @@ private func isDebuggerAttached() -> Bool? {
 
 - [ ] **Step 5: Wire iOS method `assess`**
 
-Plugin đọc `expectedIosTeamIdentifiers`, gọi detector và trả schema giống Android với `platform = "ios"`. Kết quả chỉ chứa năm tín hiệu iOS.
+Plugin đọc `expectedIosApplicationIdentifierPrefixes`, gọi detector và trả schema giống Android với `platform = "ios"`. Kết quả chỉ chứa năm tín hiệu iOS.
 
 ```swift
 result([
@@ -1039,7 +1039,9 @@ result([
     "platform": "ios",
     "operatingSystemVersion": UIDevice.current.systemVersion,
     "assessedAtEpochMs": Int64(Date().timeIntervalSince1970 * 1000),
-    "signals": detector.assess(expectedTeamIdentifiers: expectedTeams),
+    "signals": detector.assess(
+      expectedApplicationIdentifierPrefixes: expectedApplicationIdentifierPrefixes
+    ),
 ])
 ```
 
@@ -1183,7 +1185,7 @@ Create `test/public_api_test.dart` chỉ import public library và tạo:
 ```dart
 const options = SecurityOptions(
   expectedAndroidCertificateSha256: {'AABBCC'},
-  expectedIosTeamIdentifiers: {'TEAM123'},
+  expectedIosApplicationIdentifierPrefixes: {'ABCDE12345'},
 );
 expect(options.enablePlayIntegrity, isFalse);
 expect(options.enableAppAttest, isFalse);
@@ -1216,7 +1218,7 @@ README bao gồm:
 - bảng Android/iOS cho tám tín hiệu;
 - quick start local-only;
 - ví dụ `AttestationAdapter` gọi backend nhưng dùng tên endpoint minh họa `https://bank.example/security/attest`;
-- cách lấy Android signing certificate SHA-256 và iOS Team ID;
+- cách lấy Android signing certificate SHA-256 và iOS App ID Prefix;
 - hành vi `inconclusive`, `indeterminate`, `failClosed`;
 - cảnh báo best-effort và không chứng nhận tuân thủ;
 - Play Integrity/App Attest mặc định tắt và không có network call khi tắt.

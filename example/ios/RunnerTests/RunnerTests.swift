@@ -11,7 +11,7 @@ class RunnerTests: XCTestCase {
       methodName: "assess",
       arguments: [
         "expectedAndroidCertificateSha256": [],
-        "expectedIosTeamIdentifiers": [],
+        "expectedIosApplicationIdentifierPrefixes": [],
       ]
     )
 
@@ -40,33 +40,33 @@ class RunnerTests: XCTestCase {
     )
   }
 
-  func testMatchingTeamIdentifierIsNotRepackaged() {
+  func testMatchingApplicationIdentifierPrefixIsNotRepackaged() {
     XCTAssertEqual(
       IOSSignalClassifier.repackaging(
-        actualTeamIdentifier: "TEAM123456",
-        expectedTeamIdentifiers: ["TEAM123456"]
+        actualApplicationIdentifierPrefix: "OLDPREFIX1",
+        expectedApplicationIdentifierPrefixes: ["OLDPREFIX1"]
       ),
       .notDetected
     )
   }
 
-  func testMissingTeamIdentifierIsInconclusive() {
+  func testMissingApplicationIdentifierPrefixIsInconclusive() {
     XCTAssertEqual(
       IOSSignalClassifier.repackaging(
-        actualTeamIdentifier: nil,
-        expectedTeamIdentifiers: ["TEAM123456"]
+        actualApplicationIdentifierPrefix: nil,
+        expectedApplicationIdentifierPrefixes: ["OLDPREFIX1"]
       ),
       .inconclusive
     )
   }
 
-  func testDetectorUsesRuntimeTeamIdentifierReader() {
-    let match = IOSSecurityDetector(teamIdentifierReader: { "TEAM123456" })
-      .assess(expectedTeamIdentifiers: ["TEAM123456"])["repackaging"]
-    let mismatch = IOSSecurityDetector(teamIdentifierReader: { "OTHER12345" })
-      .assess(expectedTeamIdentifiers: ["TEAM123456"])["repackaging"]
-    let unavailable = IOSSecurityDetector(teamIdentifierReader: { nil })
-      .assess(expectedTeamIdentifiers: ["TEAM123456"])["repackaging"]
+  func testDetectorUsesRuntimeApplicationIdentifierPrefixReader() {
+    let match = IOSSecurityDetector(applicationIdentifierPrefixReader: { "OLDPREFIX1" })
+      .assess(expectedApplicationIdentifierPrefixes: ["OLDPREFIX1"])["repackaging"]
+    let mismatch = IOSSecurityDetector(applicationIdentifierPrefixReader: { "NEWPREFIX2" })
+      .assess(expectedApplicationIdentifierPrefixes: ["OLDPREFIX1"])["repackaging"]
+    let unavailable = IOSSecurityDetector(applicationIdentifierPrefixReader: { nil })
+      .assess(expectedApplicationIdentifierPrefixes: ["OLDPREFIX1"])["repackaging"]
 
     XCTAssertEqual(match?["status"], "notDetected")
     XCTAssertEqual(mismatch?["status"], "detected")

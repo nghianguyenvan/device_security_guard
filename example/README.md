@@ -8,4 +8,4 @@ Chạy bằng:
 flutter run
 ```
 
-Để kiểm tra repackage chính xác trong ứng dụng thực, hãy cấu hình SHA-256 certificate Android hoặc Team ID iOS qua `SecurityOptions`. Xem README ở thư mục gốc để tích hợp Play Integrity/App Attest với backend.
+Để kiểm tra repackage chính xác trong ứng dụng thực, hãy cấu hình SHA-256 certificate Android hoặc App ID Prefix iOS qua `SecurityOptions`. Xem README ở thư mục gốc để tích hợp Play Integrity/App Attest với backend.

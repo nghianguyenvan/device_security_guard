@@ -30,7 +30,9 @@ void main() {
       throwsArgumentError,
     );
     expect(
-      () => SecurityOptions(expectedIosTeamIdentifiers: {' '}).validate(),
+      () => SecurityOptions(
+        expectedIosApplicationIdentifierPrefixes: {' '},
+      ).validate(),
       throwsArgumentError,
     );
   });
@@ -40,13 +42,13 @@ void main() {
     final teams = <String>{'ABCDE12345'};
     final options = SecurityOptions(
       expectedAndroidCertificateSha256: certificates,
-      expectedIosTeamIdentifiers: teams,
+      expectedIosApplicationIdentifierPrefixes: teams,
     );
 
     certificates.clear();
     teams.clear();
 
     expect(options.expectedAndroidCertificateSha256, hasLength(1));
-    expect(options.expectedIosTeamIdentifiers, {'ABCDE12345'});
+    expect(options.expectedIosApplicationIdentifierPrefixes, {'ABCDE12345'});
   });
 }

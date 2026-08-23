@@ -45,14 +45,14 @@ void main() {
     await platform.assessLocal(
       SecurityOptions(
         expectedAndroidCertificateSha256: {'AABB'},
-        expectedIosTeamIdentifiers: {'TEAM123'},
+        expectedIosApplicationIdentifierPrefixes: {'ABCDE12345'},
       ),
     );
 
     expect(received?.method, 'assess');
     expect(received?.arguments, {
       'expectedAndroidCertificateSha256': ['AABB'],
-      'expectedIosTeamIdentifiers': ['TEAM123'],
+      'expectedIosApplicationIdentifierPrefixes': ['ABCDE12345'],
     });
   });
 

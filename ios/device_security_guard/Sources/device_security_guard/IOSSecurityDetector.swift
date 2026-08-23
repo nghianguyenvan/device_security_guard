@@ -4,23 +4,26 @@ import MachO
 import Security
 
 internal final class IOSSecurityDetector {
-  private let teamIdentifierReader: () -> String?
+  private let applicationIdentifierPrefixReader: () -> String?
 
   init(
-    teamIdentifierReader: @escaping () -> String? = IOSSecurityDetector.readTeamIdentifier
+    applicationIdentifierPrefixReader: @escaping () -> String? =
+      IOSSecurityDetector.readApplicationIdentifierPrefix
   ) {
-    self.teamIdentifierReader = teamIdentifierReader
+    self.applicationIdentifierPrefixReader = applicationIdentifierPrefixReader
   }
 
   func assess(
-    expectedTeamIdentifiers: Set<String>
+    expectedApplicationIdentifierPrefixes: Set<String>
   ) -> [String: [String: String]] {
     return [
       "debugger": safely { try self.debugger() },
       "emulator": safely { try self.emulator() },
       "hooking": safely { try self.hooking() },
       "repackaging": safely {
-        try self.repackaging(expectedTeamIdentifiers: expectedTeamIdentifiers)
+        try self.repackaging(
+          expectedApplicationIdentifierPrefixes: expectedApplicationIdentifierPrefixes
+        )
       },
       "jailbreak": safely { try self.jailbreak() },
     ]
@@ -65,19 +68,19 @@ internal final class IOSSecurityDetector {
   }
 
   private func repackaging(
-    expectedTeamIdentifiers: Set<String>
+    expectedApplicationIdentifierPrefixes: Set<String>
   ) throws -> IOSSignalResult {
-    guard !expectedTeamIdentifiers.isEmpty else {
-      return IOSSignalResult(.inconclusive, "team_identifier_unconfigured")
+    guard !expectedApplicationIdentifierPrefixes.isEmpty else {
+      return IOSSignalResult(.inconclusive, "application_identifier_prefix_unconfigured")
     }
     let value = IOSSignalClassifier.repackaging(
-      actualTeamIdentifier: teamIdentifierReader(),
-      expectedTeamIdentifiers: expectedTeamIdentifiers
+      actualApplicationIdentifierPrefix: applicationIdentifierPrefixReader(),
+      expectedApplicationIdentifierPrefixes: expectedApplicationIdentifierPrefixes
     )
     return value.result(
-      detected: "team_identifier_mismatch",
-      notDetected: "team_identifier_match",
-      inconclusive: "team_identifier_unavailable"
+      detected: "application_identifier_prefix_mismatch",
+      notDetected: "application_identifier_prefix_match",
+      inconclusive: "application_identifier_prefix_unavailable"
     )
   }
 
@@ -107,9 +110,9 @@ internal final class IOSSecurityDetector {
     #endif
   }
 
-  private static func readTeamIdentifier() -> String? {
+  private static func readApplicationIdentifierPrefix() -> String? {
     let account = UUID().uuidString
-    let service = "dev.vannghia.device_security_guard.team_identifier"
+    let service = "dev.vannghia.device_security_guard.app_id_prefix"
     let deleteQuery: [CFString: Any] = [
       kSecClass: kSecClassGenericPassword,
       kSecAttrAccount: account,
@@ -127,10 +130,10 @@ internal final class IOSSecurityDetector {
     defer { SecItemDelete(deleteQuery as CFDictionary) }
     guard let attributes = item as? [CFString: Any],
           let accessGroup = attributes[kSecAttrAccessGroup] as? String,
-          let teamIdentifier = accessGroup.split(separator: ".").first else {
+          let applicationIdentifierPrefix = accessGroup.split(separator: ".").first else {
       return nil
     }
-    return String(teamIdentifier)
+    return String(applicationIdentifierPrefix)
   }
 
   private func canWriteOutsideSandbox() -> Bool {

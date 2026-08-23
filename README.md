@@ -25,7 +25,7 @@ final assessment = await DeviceSecurityGuard.assess(
     expectedAndroidCertificateSha256: {
       '0123456789ABCDEF...',
     },
-    expectedIosTeamIdentifiers: {
+    expectedIosApplicationIdentifierPrefixes: {
       'ABCDE12345',
     },
   ),
@@ -55,7 +55,7 @@ final decision = Circular77Policy.evaluate(
 );
 ```
 
-Không cấu hình certificate Android hoặc Team ID iOS sẽ làm tín hiệu `repackaging` trả về `inconclusive`, không mặc định coi là an toàn.
+Không cấu hình certificate Android hoặc App ID Prefix iOS sẽ làm tín hiệu `repackaging` trả về `inconclusive`, không mặc định coi là an toàn.
 
 ## Ý nghĩa trạng thái
 
@@ -87,7 +87,7 @@ apksigner verify --print-certs app-release.apk
 
 ### iOS
 
-Truyền Team ID của tài khoản ký ứng dụng. Plugin đọc access group do Keychain/Security framework cấp để suy ra Team ID của bản đang chạy. Nếu hệ thống không trả được danh tính, kết quả là `inconclusive`. App Attest được backend xác minh vẫn là lớp bảo vệ mạnh hơn cho danh tính ứng dụng production.
+Truyền App ID Prefix đứng trước dấu chấm trong Keychain access group của ứng dụng, thường có 10 ký tự. Giá trị này thường trùng Team ID nhưng có thể khác ở ứng dụng legacy, vì vậy không dùng Team ID nếu hai giá trị khác nhau. Plugin đọc access group qua Security framework công khai; nếu hệ thống không trả được danh tính, kết quả là `inconclusive`. App Attest được backend xác minh vẫn là lớp bảo vệ mạnh hơn cho danh tính ứng dụng production.
 
 ## Play Integrity và App Attest
 
@@ -108,7 +108,7 @@ Adapter do ứng dụng chủ triển khai phải thực hiện luồng sau:
 2. Tạo `requestHash` cho Play Integrity hoặc `clientDataHash` cho App Attest.
 3. Gọi primitive tương ứng trên `AttestationClient`.
 4. Gửi token/attestation/assertion về backend.
-5. Backend xác minh độ mới, chống replay, package/bundle ID, certificate/Team ID và verdict bắt buộc.
+5. Backend xác minh độ mới, chống replay, package/bundle ID, certificate/App ID Prefix và verdict bắt buộc.
 6. Adapter trả `AttestationAssessment`; chỉ trả `trusted` sau khi backend xác minh thành công.
 
 Khung adapter minh họa (các hàm `backend.*` thuộc ứng dụng chủ):

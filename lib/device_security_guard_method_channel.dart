@@ -17,8 +17,8 @@ class MethodChannelDeviceSecurityGuard extends DeviceSecurityGuardPlatform {
         .invokeMethod<Object?>('assess', <String, Object?>{
           'expectedAndroidCertificateSha256':
               options.expectedAndroidCertificateSha256.toList()..sort(),
-          'expectedIosTeamIdentifiers':
-              options.expectedIosTeamIdentifiers.toList()..sort(),
+          'expectedIosApplicationIdentifierPrefixes':
+              options.expectedIosApplicationIdentifierPrefixes.toList()..sort(),
         });
     return _parseAssessment(payload);
   }

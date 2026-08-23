@@ -65,7 +65,7 @@ final decision = Circular77Policy.evaluate(assessment);
 - `enablePlayIntegrity`, mặc định là `false`;
 - `enableAppAttest`, mặc định là `false`;
 - danh sách SHA-256 của Android signing certificate mong đợi;
-- danh sách iOS Team identifier mong đợi;
+- danh sách iOS App ID Prefix mong đợi;
 - một `AttestationAdapter` tùy chọn; và
 - các tùy chọn detector độc lập với policy, chỉ được phép giảm những kiểm tra không bắt buộc và không được âm thầm biến một kiểm tra thất bại thành kết quả an toàn.
 

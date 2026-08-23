@@ -7,9 +7,11 @@ import android.os.Debug
 import android.provider.Settings
 import java.io.File
 import java.security.MessageDigest
-import java.util.concurrent.TimeUnit
 
-internal class AndroidSecurityDetector(private val context: Context) {
+internal class AndroidSecurityDetector(
+    private val context: Context,
+    private val propertyReader: AndroidSystemPropertyReader = AndroidSystemPropertyReader(),
+) {
     fun assess(expectedCertificates: Set<String>): Map<String, Map<String, String>> =
         linkedMapOf(
             "debugger" to safely(::debugger),
@@ -40,7 +42,7 @@ internal class AndroidSecurityDetector(private val context: Context) {
                     product = Build.PRODUCT.orEmpty(),
                     hardware = Build.HARDWARE.orEmpty(),
                 ),
-                qemu = systemProperty("ro.kernel.qemu"),
+                qemu = propertyReader.read("ro.kernel.qemu"),
             )
         return value.result("emulator_detected", "emulator_not_detected", "emulator_inconclusive")
     }
@@ -106,8 +108,8 @@ internal class AndroidSecurityDetector(private val context: Context) {
             AndroidSignalClassifier.root(
                 buildTags = Build.TAGS,
                 existingArtifacts = artifacts,
-                debuggable = systemProperty("ro.debuggable"),
-                secure = systemProperty("ro.secure"),
+                debuggable = propertyReader.read("ro.debuggable"),
+                secure = propertyReader.read("ro.secure"),
             )
         return value.result("root_indicator_detected", "root_indicator_not_detected")
     }
@@ -115,9 +117,9 @@ internal class AndroidSecurityDetector(private val context: Context) {
     private fun bootloader(): SignalResult {
         val value =
             AndroidSignalClassifier.bootloader(
-                verifiedBootState = systemProperty("ro.boot.verifiedbootstate"),
-                flashLocked = systemProperty("ro.boot.flash.locked"),
-                vbmetaDeviceState = systemProperty("ro.boot.vbmeta.device_state"),
+                verifiedBootState = propertyReader.read("ro.boot.verifiedbootstate"),
+                flashLocked = propertyReader.read("ro.boot.flash.locked"),
+                vbmetaDeviceState = propertyReader.read("ro.boot.vbmeta.device_state"),
             )
         return value.result(
             "bootloader_unlocked",
@@ -161,21 +163,6 @@ internal class AndroidSecurityDetector(private val context: Context) {
                 )
             }
     }
-
-    private fun systemProperty(name: String): String? =
-        runCatching {
-            val process =
-                ProcessBuilder("/system/bin/getprop", name)
-                .redirectErrorStream(true)
-                .start()
-            if (!process.waitFor(500, TimeUnit.MILLISECONDS)) {
-                process.destroyForcibly()
-                return@runCatching null
-            }
-            process.inputStream
-                .bufferedReader()
-                .use { it.readLine()?.trim()?.takeIf(String::isNotEmpty) }
-        }.getOrNull()
 
     private fun safely(block: () -> SignalResult): Map<String, String> =
         runCatching(block)

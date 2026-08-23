@@ -10,7 +10,7 @@ Tài liệu này ánh xạ các detector của `device_security_guard` với nh�
 | Thiết bị ảo | build fields và `ro.kernel.qemu` | `targetEnvironment(simulator)` | `inconclusive` nếu detector lỗi |
 | ADB | `Settings.Global.ADB_ENABLED` | Không áp dụng | `inconclusive` nếu truy vấn lỗi |
 | Hook/chèn mã runtime | `/proc/self/maps`, marker Frida/Xposed/Substrate | loaded images, `DYLD_INSERT_LIBRARIES`, marker hook phổ biến | `inconclusive` nếu detector lỗi |
-| Repackage/can thiệp ứng dụng | SHA-256 signing certificate | Team ID từ Keychain access group do hệ thống ký cấp | `inconclusive` nếu chưa cấu hình hoặc không đọc được danh tính |
+| Repackage/can thiệp ứng dụng | SHA-256 signing certificate | App ID Prefix từ Keychain access group do hệ thống cấp | `inconclusive` nếu chưa cấu hình hoặc không đọc được danh tính |
 | Root/jailbreak | build tags, root artifacts và system properties | jailbreak artifacts và thử ghi ngoài sandbox | `inconclusive` khi detector lỗi; jailbreak trên simulator không được coi là an toàn |
 | Bootloader mở khóa | verified boot, flash lock và vbmeta state | Không áp dụng | `inconclusive` nếu không có trạng thái nhận diện được |
 

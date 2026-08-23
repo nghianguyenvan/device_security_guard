@@ -6,19 +6,21 @@ final class SecurityOptions {
     this.enablePlayIntegrity = false,
     this.enableAppAttest = false,
     Set<String> expectedAndroidCertificateSha256 = const {},
-    Set<String> expectedIosTeamIdentifiers = const {},
+    Set<String> expectedIosApplicationIdentifierPrefixes = const {},
     this.attestationAdapter,
   }) : expectedAndroidCertificateSha256 = Set.unmodifiable(
          expectedAndroidCertificateSha256,
        ),
-       expectedIosTeamIdentifiers = Set.unmodifiable(
-         expectedIosTeamIdentifiers,
+       expectedIosApplicationIdentifierPrefixes = Set.unmodifiable(
+         expectedIosApplicationIdentifierPrefixes,
        );
 
   final bool enablePlayIntegrity;
   final bool enableAppAttest;
   final Set<String> expectedAndroidCertificateSha256;
-  final Set<String> expectedIosTeamIdentifiers;
+
+  /// App ID Prefix đứng trước dấu chấm trong Keychain access group của app iOS.
+  final Set<String> expectedIosApplicationIdentifierPrefixes;
   final AttestationAdapter? attestationAdapter;
 
   void validate() {
@@ -40,13 +42,13 @@ final class SecurityOptions {
         );
       }
     }
-    final teamIdentifierPattern = RegExp(r'^[A-Z0-9]{10}$');
-    for (final teamIdentifier in expectedIosTeamIdentifiers) {
-      if (!teamIdentifierPattern.hasMatch(teamIdentifier)) {
+    final applicationIdentifierPrefixPattern = RegExp(r'^[A-Z0-9]{10}$');
+    for (final prefix in expectedIosApplicationIdentifierPrefixes) {
+      if (!applicationIdentifierPrefixPattern.hasMatch(prefix)) {
         throw ArgumentError.value(
-          teamIdentifier,
-          'expectedIosTeamIdentifiers',
-          'Mỗi Apple Team ID phải gồm 10 ký tự in hoa hoặc chữ số.',
+          prefix,
+          'expectedIosApplicationIdentifierPrefixes',
+          'Mỗi Apple App ID Prefix phải gồm 10 ký tự in hoa hoặc chữ số.',
         );
       }
     }

@@ -22,8 +22,8 @@ public class DeviceSecurityGuardPlugin: NSObject, FlutterPlugin {
     switch call.method {
     case "assess":
       let arguments = call.arguments as? [String: Any]
-      let expectedTeamIdentifiers = Set(
-        arguments?["expectedIosTeamIdentifiers"] as? [String] ?? []
+      let expectedApplicationIdentifierPrefixes = Set(
+        arguments?["expectedIosApplicationIdentifierPrefixes"] as? [String] ?? []
       )
       let operatingSystemVersion = UIDevice.current.systemVersion
       let assessedAtEpochMs = Int64(Date().timeIntervalSince1970 * 1000)
@@ -34,7 +34,7 @@ public class DeviceSecurityGuardPlugin: NSObject, FlutterPlugin {
           "operatingSystemVersion": operatingSystemVersion,
           "assessedAtEpochMs": assessedAtEpochMs,
           "signals": self.detector.assess(
-            expectedTeamIdentifiers: expectedTeamIdentifiers
+            expectedApplicationIdentifierPrefixes: expectedApplicationIdentifierPrefixes
           ),
         ]
         DispatchQueue.main.async { result(payload) }
