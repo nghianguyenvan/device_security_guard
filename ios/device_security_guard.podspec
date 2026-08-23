@@ -9,7 +9,7 @@ Detects rooted, jailbroken, hooked, debugged, emulated, repackaged, and unlocked
   s.license          = { :file => '../LICENSE' }
   s.author           = 'Van Nghia'
   s.source           = { :path => '.' }
-  s.source_files = 'device_security_guard/Sources/device_security_guard/**/*'
+  s.source_files = 'device_security_guard/Sources/device_security_guard/**/*.swift'
   s.dependency 'Flutter'
   s.platform = :ios, '15.0'
   s.pod_target_xcconfig = {
