@@ -23,6 +23,27 @@ class MethodChannelDeviceSecurityGuard extends DeviceSecurityGuardPlatform {
     return _parseAssessment(payload);
   }
 
+  @override
+  Future<String> requestPlayIntegrityToken({
+    required int cloudProjectNumber,
+    required String requestHash,
+  }) async {
+    final token = await methodChannel.invokeMethod<String>(
+      'requestPlayIntegrityToken',
+      <String, Object?>{
+        'cloudProjectNumber': cloudProjectNumber,
+        'requestHash': requestHash,
+      },
+    );
+    if (token == null || token.isEmpty) {
+      throw PlatformException(
+        code: 'invalid_play_integrity_token',
+        message: 'Play Integrity returned an empty token.',
+      );
+    }
+    return token;
+  }
+
   SecurityAssessment _parseAssessment(Object? payload) {
     try {
       if (payload is! Map || payload['schemaVersion'] != 1) {

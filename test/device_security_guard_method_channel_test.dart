@@ -89,4 +89,25 @@ void main() {
       ),
     );
   });
+
+  test('requests a Play Integrity token with backend-bound data', () async {
+    MethodCall? received;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          received = call;
+          return 'encrypted-integrity-token';
+        });
+
+    final token = await platform.requestPlayIntegrityToken(
+      cloudProjectNumber: 123456789,
+      requestHash: 'base64url-request-hash',
+    );
+
+    expect(token, 'encrypted-integrity-token');
+    expect(received?.method, 'requestPlayIntegrityToken');
+    expect(received?.arguments, {
+      'cloudProjectNumber': 123456789,
+      'requestHash': 'base64url-request-hash',
+    });
+  });
 }
