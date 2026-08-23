@@ -183,7 +183,7 @@ Các detector Swift độc lập bao phủ:
 - debugger đang gắn;
 - môi trường simulator;
 - image đáng ngờ đang được nạp và dấu hiệu hook khi chạy thường gặp;
-- danh tính ứng dụng không khớp danh sách Team identifier đã cấu hình; và
+- App ID Prefix từ Keychain access group không khớp danh sách đã cấu hình; và
 - artifact jailbreak, hành vi vượt sandbox và các dấu hiệu liên quan.
 
 iOS không trả về các tín hiệu ADB, Android root và Android bootloader vì chúng không áp dụng trên nền tảng.

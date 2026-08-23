@@ -108,8 +108,8 @@ Adapter do ứng dụng chủ triển khai phải thực hiện luồng sau:
 2. Tạo `requestHash` cho Play Integrity hoặc `clientDataHash` cho App Attest.
 3. Gọi primitive tương ứng trên `AttestationClient`.
 4. Gửi token/attestation/assertion về backend.
-5. Backend xác minh độ mới, chống replay, package/bundle ID, certificate/App ID Prefix và verdict bắt buộc.
-6. Adapter trả `AttestationAssessment`; chỉ trả `trusted` sau khi backend xác minh thành công.
+5. Backend xác minh độ mới, chống replay và danh tính theo provider: Play Integrity kiểm package name cùng signing certificate; App Attest kiểm Apple App ID gồm Team ID cùng bundle ID.
+6. Backend kiểm các verdict bắt buộc; adapter chỉ trả `trusted` sau khi toàn bộ xác minh thành công.
 
 Khung adapter minh họa (các hàm `backend.*` thuộc ứng dụng chủ):
 

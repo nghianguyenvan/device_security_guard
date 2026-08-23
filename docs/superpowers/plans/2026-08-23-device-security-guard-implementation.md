@@ -499,7 +499,7 @@ abstract interface class AttestationClient {
 }
 ```
 
-Create `SecurityOptions` với defaults `false`, sets cho certificate/team ID và validation tối thiểu:
+Create `SecurityOptions` với defaults `false`, sets cho certificate/App ID Prefix và validation tối thiểu:
 
 ```dart
 final class SecurityOptions {
