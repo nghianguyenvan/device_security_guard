@@ -16,7 +16,7 @@ android {
 
     defaultConfig {
         applicationId = "dev.vannghia.device_security_guard_example"
-        minSdk = 23
+        minSdk = flutter.minSdkVersion
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
