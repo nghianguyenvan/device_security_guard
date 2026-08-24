@@ -1,10 +1,15 @@
+## 0.1.2 - 2026-08-24
+
+- Viết lại README bằng ngôn ngữ dành cho người tích hợp, giải thích rõ từng trạng thái và hướng dẫn cách sử dụng package.
+- Chuyển toàn bộ liên kết tài liệu sang URL tuyệt đối để hoạt động ổn định trên pub.dev.
+
 ## 0.1.1 - 2026-08-24
 
 - Tăng cường Android detector với `TracerPid`, marker hook/root hiện đại, phân loại emulator và bootloader thận trọng hơn.
 - Không đọc signing certificate Android khi allowlist chưa được cấu hình; kết quả vẫn là `inconclusive`.
 - Giữ lỗi probe ghi ngoài sandbox iOS ở trạng thái `inconclusive` thay vì xem như thiết bị sạch.
 - Mở rộng unit test và integration contract cho toàn bộ tín hiệu Android/iOS.
-- Viết lại README bằng ngôn ngữ dành cho người tích hợp, giải thích rõ từng trạng thái, hướng dẫn xử lý kết quả và sửa toàn bộ liên kết tài liệu cho pub.dev.
+- Rút gọn README theo đúng phạm vi detector và chuẩn bị metadata phát hành pub.dev.
 
 ## 0.1.0
 

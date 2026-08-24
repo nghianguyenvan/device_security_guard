@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'device_security_guard'
-  s.version          = '0.1.1'
+  s.version          = '0.1.2'
   s.summary          = 'Device security signals and policy helpers for Flutter.'
   s.description      = <<-DESC
 Detects rooted, jailbroken, hooked, debugged, emulated, repackaged, and unlocked environments.
