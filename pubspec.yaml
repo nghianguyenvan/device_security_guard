@@ -1,6 +1,8 @@
 name: device_security_guard
 description: Flutter security signals and policy helpers for rooted, jailbroken, hooked, debugged, emulated, repackaged, and unlocked devices.
 version: 0.1.0
+repository: https://github.com/nghianguyenvan/device_security_guard
+issue_tracker: https://github.com/nghianguyenvan/device_security_guard/issues
 topics:
   - security
   - root-detection
