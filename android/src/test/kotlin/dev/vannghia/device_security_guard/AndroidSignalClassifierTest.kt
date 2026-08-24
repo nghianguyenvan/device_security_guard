@@ -5,6 +5,61 @@ import kotlin.test.assertEquals
 
 internal class AndroidSignalClassifierTest {
     @Test
+    fun javaDebuggerIsDetectedWhenProcessStatusIsUnavailable() {
+        assertEquals(
+            CheckValue.DETECTED,
+            AndroidSignalClassifier.debugger(
+                javaDebuggerDetected = true,
+                processStatus = null,
+            ),
+        )
+    }
+
+    @Test
+    fun nativeTracerIsDetectedFromProcessStatus() {
+        assertEquals(
+            CheckValue.DETECTED,
+            AndroidSignalClassifier.debugger(
+                javaDebuggerDetected = false,
+                processStatus = "Name:\tapp\nTracerPid:\t42\nState:\tR",
+            ),
+        )
+    }
+
+    @Test
+    fun zeroTracerPidIsNotDetected() {
+        assertEquals(
+            CheckValue.NOT_DETECTED,
+            AndroidSignalClassifier.debugger(
+                javaDebuggerDetected = false,
+                processStatus = "Name:\tapp\nTracerPid:\t0\nState:\tR",
+            ),
+        )
+    }
+
+    @Test
+    fun unavailableProcessStatusMakesDebuggerInconclusive() {
+        assertEquals(
+            CheckValue.INCONCLUSIVE,
+            AndroidSignalClassifier.debugger(
+                javaDebuggerDetected = false,
+                processStatus = null,
+            ),
+        )
+    }
+
+    @Test
+    fun malformedTracerPidMakesDebuggerInconclusive() {
+        assertEquals(
+            CheckValue.INCONCLUSIVE,
+            AndroidSignalClassifier.debugger(
+                javaDebuggerDetected = false,
+                processStatus = "Name:\tapp\nTracerPid:\tunknown",
+            ),
+        )
+    }
+
+    @Test
     fun emulatorRequiresOneStrongIndicator() {
         assertEquals(
             CheckValue.DETECTED,
@@ -43,6 +98,44 @@ internal class AndroidSignalClassifierTest {
     }
 
     @Test
+    fun singleGenericFieldDoesNotMarkPhysicalDeviceAsEmulator() {
+        assertEquals(
+            CheckValue.NOT_DETECTED,
+            AndroidSignalClassifier.emulator(
+                BuildSnapshot(
+                    fingerprint = "vendor/device/device:16/release-keys",
+                    model = "Generic Phone",
+                    manufacturer = "Vendor",
+                    brand = "vendor",
+                    device = "device",
+                    product = "product",
+                    hardware = "hardware",
+                ),
+                qemu = SystemPropertyRead.Value("0"),
+            ),
+        )
+    }
+
+    @Test
+    fun multipleGenericBuildFieldsAreDetectedAsEmulator() {
+        assertEquals(
+            CheckValue.DETECTED,
+            AndroidSignalClassifier.emulator(
+                BuildSnapshot(
+                    fingerprint = "generic/device/device:16/release-keys",
+                    model = "Phone",
+                    manufacturer = "Vendor",
+                    brand = "generic",
+                    device = "device",
+                    product = "product",
+                    hardware = "hardware",
+                ),
+                qemu = SystemPropertyRead.Value("0"),
+            ),
+        )
+    }
+
+    @Test
     fun hookNamesAreCaseInsensitive() {
         assertEquals(
             CheckValue.DETECTED,
@@ -51,10 +144,41 @@ internal class AndroidSignalClassifierTest {
     }
 
     @Test
+    fun modernRuntimeHookMarkerIsDetected() {
+        assertEquals(
+            CheckValue.DETECTED,
+            AndroidSignalClassifier.hooking(
+                "/data/adb/riru/lib/arm64/libriru.so",
+            ),
+        )
+    }
+
+    @Test
     fun unavailableProcessMapsAreInconclusive() {
         assertEquals(
             CheckValue.INCONCLUSIVE,
             AndroidSignalClassifier.hooking(processMaps = null),
+        )
+    }
+
+    @Test
+    fun loadedHookFrameworkIsDetectedWhenProcessMapsAreUnavailable() {
+        assertEquals(
+            CheckValue.DETECTED,
+            AndroidSignalClassifier.hooking(
+                processMaps = null,
+                loadedFrameworks = setOf("de.robv.android.xposed.XposedBridge"),
+            ),
+        )
+    }
+
+    @Test
+    fun cleanProcessMapsAreNotDetectedAsHooking() {
+        assertEquals(
+            CheckValue.NOT_DETECTED,
+            AndroidSignalClassifier.hooking(
+                "/system/lib64/libandroid_runtime.so\n/system/lib64/libc.so",
+            ),
         )
     }
 
@@ -69,6 +193,61 @@ internal class AndroidSignalClassifierTest {
                 secure = SystemPropertyRead.Value("1"),
             ),
         )
+    }
+
+    @Test
+    fun modernRootArtifactsAreDetected() {
+        listOf(
+            "/data/adb/magisk",
+            "/data/adb/ksu",
+            "/data/adb/ap",
+            "/debug_ramdisk/.magisk",
+        ).forEach { presentPath ->
+            val artifacts =
+                AndroidSignalClassifier.existingRootArtifacts { path -> path == presentPath }
+
+            assertEquals(
+                CheckValue.DETECTED,
+                AndroidSignalClassifier.root(
+                    buildTags = "release-keys",
+                    existingArtifacts = artifacts,
+                    debuggable = SystemPropertyRead.Value("0"),
+                    secure = SystemPropertyRead.Value("1"),
+                ),
+                presentPath,
+            )
+        }
+    }
+
+    @Test
+    fun cleanReleasePropertiesAreNotDetectedAsRoot() {
+        assertEquals(
+            CheckValue.NOT_DETECTED,
+            AndroidSignalClassifier.root(
+                buildTags = "release-keys",
+                existingArtifacts = emptySet(),
+                debuggable = SystemPropertyRead.Value("0"),
+                secure = SystemPropertyRead.Value("1"),
+            ),
+        )
+    }
+
+    @Test
+    fun independentRootIndicatorsAreDetected() {
+        val cases =
+            listOf(
+                Triple("test-keys", SystemPropertyRead.Value("0"), SystemPropertyRead.Value("1")),
+                Triple("release-keys", SystemPropertyRead.Value("1"), SystemPropertyRead.Value("1")),
+                Triple("release-keys", SystemPropertyRead.Value("0"), SystemPropertyRead.Value("0")),
+            )
+
+        cases.forEach { (tags, debuggable, secure) ->
+            assertEquals(
+                CheckValue.DETECTED,
+                AndroidSignalClassifier.root(tags, emptySet(), debuggable, secure),
+                "tags=$tags debuggable=$debuggable secure=$secure",
+            )
+        }
     }
 
     @Test
@@ -91,6 +270,64 @@ internal class AndroidSignalClassifierTest {
                 SystemPropertyRead.Missing,
                 SystemPropertyRead.Missing,
                 SystemPropertyRead.Missing,
+            ),
+        )
+    }
+
+    @Test
+    fun flashLockAloneIsInsufficientToDeclareBootloaderLocked() {
+        assertEquals(
+            CheckValue.INCONCLUSIVE,
+            AndroidSignalClassifier.bootloader(
+                verifiedBootState = SystemPropertyRead.Missing,
+                flashLocked = SystemPropertyRead.Value("1"),
+                vbmetaDeviceState = SystemPropertyRead.Missing,
+            ),
+        )
+    }
+
+    @Test
+    fun verifiedGreenIsSufficientToDeclareBootloaderLocked() {
+        assertEquals(
+            CheckValue.NOT_DETECTED,
+            AndroidSignalClassifier.bootloader(
+                verifiedBootState = SystemPropertyRead.Value(" GREEN "),
+                flashLocked = SystemPropertyRead.Missing,
+                vbmetaDeviceState = SystemPropertyRead.Missing,
+            ),
+        )
+    }
+
+    @Test
+    fun eachUnlockPropertyIsDetectedIndependently() {
+        val cases =
+            listOf(
+                Triple("orange", null, null),
+                Triple(null, "0", null),
+                Triple(null, null, "unlocked"),
+            )
+
+        cases.forEach { (verifiedBoot, flashLock, vbmetaState) ->
+            assertEquals(
+                CheckValue.DETECTED,
+                AndroidSignalClassifier.bootloader(
+                    verifiedBoot?.let(SystemPropertyRead::Value) ?: SystemPropertyRead.Missing,
+                    flashLock?.let(SystemPropertyRead::Value) ?: SystemPropertyRead.Missing,
+                    vbmetaState?.let(SystemPropertyRead::Value) ?: SystemPropertyRead.Missing,
+                ),
+                "verifiedBoot=$verifiedBoot flashLock=$flashLock vbmetaState=$vbmetaState",
+            )
+        }
+    }
+
+    @Test
+    fun unknownVerifiedBootStateIsInconclusive() {
+        assertEquals(
+            CheckValue.INCONCLUSIVE,
+            AndroidSignalClassifier.bootloader(
+                verifiedBootState = SystemPropertyRead.Value("yellow"),
+                flashLocked = SystemPropertyRead.Value("1"),
+                vbmetaDeviceState = SystemPropertyRead.Value("locked"),
             ),
         )
     }
@@ -140,6 +377,19 @@ internal class AndroidSignalClassifierTest {
     }
 
     @Test
+    fun missingSecurityPropertyMakesRootInconclusiveWithoutOtherIndicator() {
+        assertEquals(
+            CheckValue.INCONCLUSIVE,
+            AndroidSignalClassifier.root(
+                buildTags = "release-keys",
+                existingArtifacts = emptySet(),
+                debuggable = SystemPropertyRead.Missing,
+                secure = SystemPropertyRead.Value("1"),
+            ),
+        )
+    }
+
+    @Test
     fun expectedCertificateMatchIsNotRepackaged() {
         assertEquals(
             CheckValue.NOT_DETECTED,
@@ -157,6 +407,28 @@ internal class AndroidSignalClassifierTest {
             AndroidSignalClassifier.repackaging(
                 actualCertificates = setOf("AABB"),
                 expectedCertificates = emptySet(),
+            ),
+        )
+    }
+
+    @Test
+    fun missingActualCertificateIsInconclusive() {
+        assertEquals(
+            CheckValue.INCONCLUSIVE,
+            AndroidSignalClassifier.repackaging(
+                actualCertificates = emptySet(),
+                expectedCertificates = setOf("AABB"),
+            ),
+        )
+    }
+
+    @Test
+    fun certificateMismatchIsDetectedAsRepackaging() {
+        assertEquals(
+            CheckValue.DETECTED,
+            AndroidSignalClassifier.repackaging(
+                actualCertificates = setOf("AABB"),
+                expectedCertificates = setOf("CCDD"),
             ),
         )
     }

@@ -1,14 +1,17 @@
 Pod::Spec.new do |s|
   s.name             = 'device_security_guard'
-  s.version          = '0.1.0'
+  s.version          = '0.1.1'
   s.summary          = 'Device security signals and policy helpers for Flutter.'
   s.description      = <<-DESC
 Detects rooted, jailbroken, hooked, debugged, emulated, repackaged, and unlocked environments.
                        DESC
   s.homepage         = 'https://pub.dev/packages/device_security_guard'
-  s.license          = { :file => '../LICENSE' }
+  s.license          = { :type => 'MIT', :file => '../LICENSE' }
   s.author           = 'Van Nghia'
-  s.source           = { :path => '.' }
+  s.source           = {
+    :git => 'https://github.com/nghianguyenvan/device_security_guard.git',
+    :tag => "v#{s.version}"
+  }
   s.source_files = 'device_security_guard/Sources/device_security_guard/**/*.swift'
   s.dependency 'Flutter'
   s.frameworks = 'Security'

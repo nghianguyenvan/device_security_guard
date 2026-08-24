@@ -11,6 +11,7 @@ import java.security.MessageDigest
 internal class AndroidSecurityDetector(
     private val context: Context,
     private val propertyReader: AndroidSystemPropertyReader = AndroidSystemPropertyReader(),
+    private val signingCertificatesProvider: (() -> Set<String>)? = null,
 ) {
     fun assess(expectedCertificates: Set<String>): Map<String, Map<String, String>> =
         linkedMapOf(
@@ -23,12 +24,20 @@ internal class AndroidSecurityDetector(
             "bootloaderUnlocked" to safely(::bootloader),
         )
 
-    private fun debugger(): SignalResult =
-        if (Debug.isDebuggerConnected() || Debug.waitingForDebugger()) {
-            SignalResult(CheckValue.DETECTED, "debugger_attached")
-        } else {
-            SignalResult(CheckValue.NOT_DETECTED, "debugger_not_detected")
-        }
+    private fun debugger(): SignalResult {
+        val processStatus =
+            File("/proc/self/status").takeIf(File::canRead)?.let { file ->
+                runCatching(file::readText).getOrNull()
+            }
+        return AndroidSignalClassifier.debugger(
+            javaDebuggerDetected = Debug.isDebuggerConnected() || Debug.waitingForDebugger(),
+            processStatus = processStatus,
+        ).result(
+            "debugger_attached",
+            "debugger_not_detected",
+            "process_status_unavailable",
+        )
+    }
 
     private fun emulator(): SignalResult {
         val value =
@@ -71,8 +80,11 @@ internal class AndroidSecurityDetector(
             listOf(
                 "de.robv.android.xposed.XposedBridge",
                 "com.saurik.substrate.MS$2",
+                "org.lsposed.lspd.nativebridge.NativeAPI",
+                "com.swift.sandhook.SandHook",
+                "lab.galaxy.yahfa.HookMain",
             ).filter { className ->
-                runCatching { Class.forName(className) }.isSuccess
+                runCatching { Class.forName(className, false, context.classLoader) }.isSuccess
             }
         val value = AndroidSignalClassifier.hooking(maps, loadedFrameworks.toSet())
         return value.result(
@@ -82,9 +94,16 @@ internal class AndroidSecurityDetector(
         )
     }
 
-    private fun repackaging(expectedCertificates: Set<String>): SignalResult {
-        val actual = signingCertificates()
+    internal fun repackaging(expectedCertificates: Set<String>): SignalResult {
         val expected = expectedCertificates.map(::normalizeCertificate).toSet()
+        if (expected.isEmpty()) {
+            return SignalResult(CheckValue.INCONCLUSIVE, "signing_certificate_unconfigured")
+        }
+
+        val actual = signingCertificatesProvider?.invoke() ?: signingCertificates()
+        if (actual.isEmpty()) {
+            return SignalResult(CheckValue.INCONCLUSIVE, "signing_certificate_unavailable")
+        }
         val value = AndroidSignalClassifier.repackaging(actual, expected)
         return value.result(
             "signing_certificate_mismatch",
@@ -94,16 +113,7 @@ internal class AndroidSecurityDetector(
     }
 
     private fun root(): SignalResult {
-        val artifacts =
-            listOf(
-                "/system/app/Superuser.apk",
-                "/system/bin/su",
-                "/system/xbin/su",
-                "/sbin/su",
-                "/data/local/bin/su",
-                "/data/local/xbin/su",
-                "/data/adb/magisk",
-            ).filterTo(mutableSetOf()) { File(it).exists() }
+        val artifacts = AndroidSignalClassifier.existingRootArtifacts { File(it).exists() }
         val value =
             AndroidSignalClassifier.root(
                 buildTags = Build.TAGS,
@@ -173,7 +183,7 @@ internal class AndroidSecurityDetector(
         value.filter(Char::isLetterOrDigit).uppercase()
 }
 
-private data class SignalResult(val status: CheckValue, val reasonCode: String) {
+internal data class SignalResult(val status: CheckValue, val reasonCode: String) {
     fun toMap(): Map<String, String> =
         mapOf("status" to status.wireValue, "reasonCode" to reasonCode)
 }

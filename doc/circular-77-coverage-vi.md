@@ -8,12 +8,12 @@ Tài liệu ánh xạ detector của `device_security_guard` với nhóm dấu h
 
 | Nhóm dấu hiệu | Android | iOS | Giới hạn chính |
 |---|---|---|---|
-| Trình gỡ lỗi | `Debug.isDebuggerConnected`, trạng thái chờ debugger | cờ `P_TRACED` qua `sysctl` | Có thể bị hook để làm sai kết quả runtime. |
+| Trình gỡ lỗi | `Debug.isDebuggerConnected`, trạng thái chờ debugger và `TracerPid` trong `/proc/self/status` | cờ `P_TRACED` qua `sysctl` | Có thể bị hook để làm sai kết quả runtime. |
 | Thiết bị ảo | build fingerprint/model/manufacturer/brand/device/product/hardware và `ro.kernel.qemu` | `targetEnvironment(simulator)` | Android dùng heuristic nên có nguy cơ false positive trên thiết bị/OEM đặc biệt. |
 | ADB | `Settings.Global.ADB_ENABLED` | Không áp dụng | Chỉ phản ánh trạng thái ADB tại thời điểm assessment. |
-| Hook/chèn mã | `/proc/self/maps`, marker Frida/Xposed/LSPosed/Substrate | loaded Mach-O images, `DYLD_INSERT_LIBRARIES`, marker Frida/Substrate/Substitute/ElleKit | Chỉ nhận diện indicator đã biết; framework được đổi tên hoặc ẩn có thể không bị phát hiện. |
+| Hook/chèn mã | `/proc/self/maps`, loaded classes và marker Frida/Xposed/LSPosed/Substrate/Zygisk/Riru/SandHook/YAHFA/Dobby | loaded Mach-O images, `DYLD_INSERT_LIBRARIES`, marker Frida/Substrate/Substitute/ElleKit | Chỉ nhận diện indicator đã biết; framework được đổi tên hoặc ẩn có thể không bị phát hiện. |
 | Repackage/danh tính ký | SHA-256 certificate của APK đang chạy so với allowlist | App ID Prefix trong Keychain access group so với allowlist | Phải cấu hình allowlist. iOS là kiểm tra best-effort, không phải chứng thực mật mã. |
-| Root/jailbreak | test-keys, root artifacts, `ro.debuggable`, `ro.secure` | jailbreak artifacts và thử ghi ngoài sandbox | Root/jailbreak ẩn có thể vượt qua heuristic. Jailbreak trên simulator luôn `inconclusive`. |
+| Root/jailbreak | test-keys, `su`, Magisk, KernelSU, APatch, `ro.debuggable`, `ro.secure` | jailbreak artifacts và thử ghi ngoài sandbox | Root/jailbreak ẩn có thể vượt qua heuristic. Jailbreak trên simulator luôn `inconclusive`. |
 | Bootloader mở khóa | verified boot state, flash lock và vbmeta device state | Không áp dụng | Một số OEM không công bố đủ system property; khi đó kết quả là `inconclusive`. |
 
 ## Quy ước kết quả

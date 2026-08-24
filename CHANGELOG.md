@@ -1,3 +1,11 @@
+## 0.1.1 - 2026-08-24
+
+- Tăng cường Android detector với `TracerPid`, marker hook/root hiện đại, phân loại emulator và bootloader thận trọng hơn.
+- Không đọc signing certificate Android khi allowlist chưa được cấu hình; kết quả vẫn là `inconclusive`.
+- Giữ lỗi probe ghi ngoài sandbox iOS ở trạng thái `inconclusive` thay vì xem như thiết bị sạch.
+- Mở rộng unit test và integration contract cho toàn bộ tín hiệu Android/iOS.
+- Rút gọn README theo đúng phạm vi detector và chuẩn bị metadata phát hành pub.dev.
+
 ## 0.1.0
 
 - Thêm phát hiện debugger, emulator/simulator, ADB, hook, repackage, root/jailbreak và bootloader mở khóa trên nền tảng áp dụng.

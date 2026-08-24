@@ -101,7 +101,7 @@ internal final class IOSSecurityDetector {
       let existing = Set(artifactPaths.filter(FileManager.default.fileExists))
       let value = IOSSignalClassifier.jailbreak(
         existingArtifacts: existing,
-        canWriteOutsideSandbox: canWriteOutsideSandbox()
+        outsideSandboxWrite: outsideSandboxWrite()
       )
       return value.result(
         detected: "jailbreak_indicator_detected",
@@ -129,21 +129,22 @@ internal final class IOSSecurityDetector {
     }
     defer { SecItemDelete(deleteQuery as CFDictionary) }
     guard let attributes = item as? [CFString: Any],
-          let accessGroup = attributes[kSecAttrAccessGroup] as? String,
-          let applicationIdentifierPrefix = accessGroup.split(separator: ".").first else {
+      let accessGroup = attributes[kSecAttrAccessGroup] as? String,
+      let applicationIdentifierPrefix = accessGroup.split(separator: ".").first
+    else {
       return nil
     }
     return String(applicationIdentifierPrefix)
   }
 
-  private func canWriteOutsideSandbox() -> Bool {
+  private func outsideSandboxWrite() -> IOSProbeResult {
     let url = URL(fileURLWithPath: "/private/device_security_guard_\(UUID().uuidString)")
     do {
       try Data([0]).write(to: url)
       try? FileManager.default.removeItem(at: url)
-      return true
+      return .positive
     } catch {
-      return false
+      return IOSSignalClassifier.sandboxWrite(error: error)
     }
   }
 
@@ -176,8 +177,8 @@ private struct IOSSignalResult {
   }
 }
 
-private extension NativeCheckStatus {
-  func result(
+extension NativeCheckStatus {
+  fileprivate func result(
     detected: String,
     notDetected: String,
     inconclusive: String = "detector_inconclusive"

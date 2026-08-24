@@ -1,22 +1,20 @@
 # Hướng dẫn phát hành lên pub.dev
 
-Quy trình này dành cho `device_security_guard`. Lần phát hành đầu nên thực hiện thủ công; sau khi package tồn tại trên pub.dev mới cấu hình publish tự động.
+Quy trình này dành cho các bản cập nhật của `device_security_guard` trên pub.dev.
 
 ## 1. Chuẩn bị tài khoản và metadata
 
-1. Đăng nhập [pub.dev](https://pub.dev) bằng Google Account.
-2. Nếu có tên miền tổ chức, tạo **verified publisher** trong menu tài khoản và xác minh domain qua Google Search Console.
-3. Tạo repository công khai, sau đó bổ sung URL thật vào `pubspec.yaml`:
+1. Đăng nhập [pub.dev](https://pub.dev) bằng tài khoản có quyền upload package.
+2. Kiểm tra repository và issue tracker trong `pubspec.yaml` vẫn chính xác:
 
    ```yaml
    repository: https://github.com/<owner>/device_security_guard
    issue_tracker: https://github.com/<owner>/device_security_guard/issues
    ```
 
-4. Kiểm tra tên `device_security_guard` chưa được package khác sử dụng. Kết quả cuối cùng chỉ được xác nhận khi pub.dev chấp nhận lần publish đầu.
-5. Kiểm tra `LICENSE`, `README.md`, `CHANGELOG.md`, version và quyền phân phối toàn bộ nội dung trong archive.
+3. Kiểm tra `LICENSE`, `README.md`, `CHANGELOG.md`, version và quyền phân phối toàn bộ nội dung trong archive.
 
-Không dùng URL placeholder khi phát hành. Repository hiện tại chưa cấu hình Git remote nên cần hoàn thành bước 3 trước khi publish để trang package chuyên nghiệp và có nơi tiếp nhận issue.
+Không dùng URL placeholder khi phát hành.
 
 ## 2. Chạy preflight
 
@@ -24,7 +22,7 @@ Từ thư mục gốc package:
 
 ```bash
 flutter pub get
-dart format --output=none --set-exit-if-changed lib test example/lib example/test
+dart format --output=none --set-exit-if-changed lib test example/lib example/integration_test
 flutter analyze
 flutter test --coverage
 dart doc --dry-run
@@ -54,7 +52,7 @@ flutter build ios --simulator --no-codesign
 
 Lệnh iOS cần chạy trên macOS có Xcode và CocoaPods.
 
-## 3. Phát hành phiên bản đầu
+## 3. Phát hành phiên bản mới
 
 Sau khi review chính xác archive hiển thị bởi dry-run:
 
@@ -69,7 +67,7 @@ Lưu ý quan trọng:
 - Package/version đã publish được xem là lâu dài; không dựa vào khả năng xóa để sửa sai.
 - Không thể publish lại cùng một version. Nếu cần sửa, tăng version theo semantic versioning và cập nhật `CHANGELOG.md`.
 - Pub.dev cho phép retract một version trong cửa sổ giới hạn, nhưng retract không phải xóa package.
-- Lần publish đầu xác lập uploader ban đầu cho package.
+- Tài khoản thực hiện lệnh phải là uploader hoặc thành viên publisher sở hữu package.
 
 ## 4. Chuyển sang verified publisher
 
@@ -86,9 +84,9 @@ Việc chuyển từ tài khoản cá nhân sang publisher không thể đảo n
 Tag phải trỏ đúng commit đã tạo archive phát hành:
 
 ```bash
-git tag -a v0.1.0 -m "device_security_guard 0.1.0"
+git tag -a v0.1.1 -m "device_security_guard 0.1.1"
 git push origin main
-git push origin v0.1.0
+git push origin v0.1.1
 ```
 
 Chỉ chạy sau khi đã cấu hình đúng `origin`. Nếu publish thủ công trước khi tạo tag, không chỉnh sửa source rồi mới tag; tag phải khớp đúng code đã upload.

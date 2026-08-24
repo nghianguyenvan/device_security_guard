@@ -18,7 +18,50 @@ internal data class BuildSnapshot(
 
 internal object AndroidSignalClassifier {
     private val hookMarkers =
-        setOf("frida", "xposed", "edxposed", "lsposed", "substrate", "libhooker")
+        setOf(
+            "frida",
+            "xposed",
+            "edxposed",
+            "lsposed",
+            "substrate",
+            "libhooker",
+            "zygisk",
+            "riru",
+            "sandhook",
+            "yahfa",
+            "libdobby",
+        )
+    private val rootArtifactPaths =
+        setOf(
+            "/system/app/Superuser.apk",
+            "/system/bin/su",
+            "/system/xbin/su",
+            "/system/bin/.ext/.su",
+            "/system/xbin/daemonsu",
+            "/sbin/su",
+            "/su/bin/su",
+            "/data/local/bin/su",
+            "/data/local/xbin/su",
+            "/data/adb/magisk",
+            "/data/adb/ksu",
+            "/data/adb/ap",
+            "/sbin/.magisk",
+            "/debug_ramdisk/.magisk",
+        )
+
+    fun debugger(javaDebuggerDetected: Boolean, processStatus: String?): CheckValue {
+        if (javaDebuggerDetected) return CheckValue.DETECTED
+
+        val tracerPid =
+            processStatus
+                ?.lineSequence()
+                ?.firstOrNull { it.startsWith("TracerPid:") }
+                ?.substringAfter(':')
+                ?.trim()
+                ?.toIntOrNull()
+                ?: return CheckValue.INCONCLUSIVE
+        return if (tracerPid > 0) CheckValue.DETECTED else CheckValue.NOT_DETECTED
+    }
 
     fun emulator(build: BuildSnapshot, qemu: SystemPropertyRead): CheckValue {
         val fields =
@@ -32,18 +75,18 @@ internal object AndroidSignalClassifier {
                 build.hardware,
             ).map(String::lowercase)
 
-        val detected =
-            qemu.valueOrNull() == "1" ||
-                fields.any { value ->
-                    value.contains("generic") ||
-                        value.contains("sdk_gphone") ||
-                        value.contains("emulator") ||
-                        value.contains("android sdk built for") ||
-                        value.contains("genymotion") ||
-                        value.contains("goldfish") ||
-                        value.contains("ranchu") ||
-                        value.contains("vbox")
-                }
+        val strongMarkerDetected =
+            fields.any { value ->
+                value.contains("sdk_gphone") ||
+                    value.contains("emulator") ||
+                    value.contains("android sdk built for") ||
+                    value.contains("genymotion") ||
+                    value.contains("goldfish") ||
+                    value.contains("ranchu") ||
+                    value.contains("vbox")
+            }
+        val multipleGenericMarkers = fields.count { it.contains("generic") } >= 2
+        val detected = qemu.valueOrNull() == "1" || strongMarkerDetected || multipleGenericMarkers
         return when {
             detected -> CheckValue.DETECTED
             qemu == SystemPropertyRead.Error -> CheckValue.INCONCLUSIVE
@@ -69,6 +112,9 @@ internal object AndroidSignalClassifier {
         }
     }
 
+    fun existingRootArtifacts(pathExists: (String) -> Boolean): Set<String> =
+        rootArtifactPaths.filterTo(linkedSetOf(), pathExists)
+
     fun root(
         buildTags: String?,
         existingArtifacts: Set<String>,
@@ -82,8 +128,9 @@ internal object AndroidSignalClassifier {
                 secure.valueOrNull() == "0"
         return when {
             detected -> CheckValue.DETECTED
-            debuggable == SystemPropertyRead.Error || secure == SystemPropertyRead.Error ->
+            debuggable !is SystemPropertyRead.Value || secure !is SystemPropertyRead.Value ->
                 CheckValue.INCONCLUSIVE
+            debuggable.value != "0" || secure.value != "1" -> CheckValue.INCONCLUSIVE
             else -> CheckValue.NOT_DETECTED
         }
     }
@@ -94,19 +141,28 @@ internal object AndroidSignalClassifier {
         vbmetaDeviceState: SystemPropertyRead,
     ): CheckValue {
         val properties = listOf(verifiedBootState, flashLocked, vbmetaDeviceState)
-        val values = properties.mapNotNull(SystemPropertyRead::valueOrNull)
-            .map { it.trim().lowercase() }
+        val verifiedBoot = verifiedBootState.normalizedValueOrNull()
+        val flashLock = flashLocked.normalizedValueOrNull()
+        val vbmetaState = vbmetaDeviceState.normalizedValueOrNull()
 
-        if (values.any { it in setOf("orange", "red", "unlocked", "0") }) {
+        if (verifiedBoot in setOf("orange", "red") ||
+            flashLock == "0" ||
+            vbmetaState == "unlocked"
+        ) {
             return CheckValue.DETECTED
         }
         if (properties.any { it == SystemPropertyRead.Error }) {
             return CheckValue.INCONCLUSIVE
         }
-        if (values.isEmpty()) return CheckValue.INCONCLUSIVE
+        if (verifiedBoot != null && verifiedBoot != "green") return CheckValue.INCONCLUSIVE
+        if (flashLock != null && flashLock != "1") return CheckValue.INCONCLUSIVE
+        if (vbmetaState != null && vbmetaState != "locked") return CheckValue.INCONCLUSIVE
 
-        val recognized = values.all { it in setOf("green", "locked", "1") }
-        return if (recognized) CheckValue.NOT_DETECTED else CheckValue.INCONCLUSIVE
+        return if (verifiedBoot == "green" || vbmetaState == "locked") {
+            CheckValue.NOT_DETECTED
+        } else {
+            CheckValue.INCONCLUSIVE
+        }
     }
 
     fun repackaging(
@@ -126,3 +182,6 @@ internal object AndroidSignalClassifier {
 
 private fun SystemPropertyRead.valueOrNull(): String? =
     (this as? SystemPropertyRead.Value)?.value
+
+private fun SystemPropertyRead.normalizedValueOrNull(): String? =
+    valueOrNull()?.trim()?.lowercase()

@@ -72,6 +72,61 @@ void main() {
     expect(result.signals.containsKey(SecuritySignal.jailbreak), isFalse);
   });
 
+  test('complete Android payload preserves every signal status', () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (_) async {
+          return <String, Object?>{
+            ...partialPayload,
+            'signals': <String, Object?>{
+              'debugger': <String, Object?>{
+                'status': 'detected',
+                'reasonCode': 'debugger_attached',
+              },
+              'emulator': <String, Object?>{
+                'status': 'notDetected',
+                'reasonCode': 'emulator_not_detected',
+              },
+              'adbEnabled': <String, Object?>{
+                'status': 'notDetected',
+                'reasonCode': 'adb_disabled',
+              },
+              'hooking': <String, Object?>{
+                'status': 'notDetected',
+                'reasonCode': 'hook_framework_not_detected',
+              },
+              'repackaging': <String, Object?>{
+                'status': 'inconclusive',
+                'reasonCode': 'signing_certificate_unconfigured',
+              },
+              'root': <String, Object?>{
+                'status': 'notDetected',
+                'reasonCode': 'root_indicator_not_detected',
+              },
+              'bootloaderUnlocked': <String, Object?>{
+                'status': 'notDetected',
+                'reasonCode': 'bootloader_locked',
+              },
+            },
+          };
+        });
+
+    final result = await platform.assessLocal(SecurityOptions());
+
+    expect(result.signals, hasLength(7));
+    expect(
+      result.signals[SecuritySignal.debugger]?.status,
+      CheckStatus.detected,
+    );
+    expect(
+      result.signals[SecuritySignal.repackaging]?.status,
+      CheckStatus.inconclusive,
+    );
+    expect(
+      result.signals[SecuritySignal.bootloaderUnlocked]?.reasonCode,
+      'bootloader_locked',
+    );
+  });
+
   test('invalid schema is rejected', () async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (_) async {

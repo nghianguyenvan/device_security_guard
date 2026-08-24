@@ -13,5 +13,51 @@ void main() {
       assessment.platform,
       anyOf(SecurityPlatform.android, SecurityPlatform.iOS),
     );
+    final expectedSignals = switch (assessment.platform) {
+      SecurityPlatform.android => {
+        SecuritySignal.debugger,
+        SecuritySignal.emulator,
+        SecuritySignal.adbEnabled,
+        SecuritySignal.hooking,
+        SecuritySignal.repackaging,
+        SecuritySignal.root,
+        SecuritySignal.bootloaderUnlocked,
+      },
+      SecurityPlatform.iOS => {
+        SecuritySignal.debugger,
+        SecuritySignal.emulator,
+        SecuritySignal.hooking,
+        SecuritySignal.repackaging,
+        SecuritySignal.jailbreak,
+      },
+    };
+    expect(assessment.signals.keys.toSet(), expectedSignals);
+    if (assessment.platform == SecurityPlatform.android) {
+      expect(
+        assessment.signals[SecuritySignal.emulator]?.status,
+        CheckStatus.detected,
+      );
+      expect(
+        assessment.signals[SecuritySignal.adbEnabled]?.status,
+        CheckStatus.detected,
+      );
+      expect(
+        assessment.signals[SecuritySignal.repackaging]?.status,
+        CheckStatus.inconclusive,
+      );
+    } else {
+      expect(
+        assessment.signals[SecuritySignal.emulator]?.status,
+        CheckStatus.detected,
+      );
+      expect(
+        assessment.signals[SecuritySignal.repackaging]?.status,
+        CheckStatus.inconclusive,
+      );
+      expect(
+        assessment.signals[SecuritySignal.jailbreak]?.status,
+        CheckStatus.inconclusive,
+      );
+    }
   });
 }

@@ -6,6 +6,12 @@ internal enum NativeCheckStatus: String {
   case inconclusive
 }
 
+internal enum IOSProbeResult {
+  case positive
+  case negative
+  case inconclusive
+}
+
 internal enum IOSSignalClassifier {
   private static let hookMarkers = [
     "frida", "substrate", "substitute", "libhooker", "ellekit", "cycript",
@@ -28,8 +34,9 @@ internal enum IOSSignalClassifier {
     expectedApplicationIdentifierPrefixes: Set<String>
   ) -> NativeCheckStatus {
     guard !expectedApplicationIdentifierPrefixes.isEmpty,
-          let actualApplicationIdentifierPrefix,
-          !actualApplicationIdentifierPrefix.isEmpty else {
+      let actualApplicationIdentifierPrefix,
+      !actualApplicationIdentifierPrefix.isEmpty
+    else {
       return .inconclusive
     }
     return expectedApplicationIdentifierPrefixes.contains(actualApplicationIdentifierPrefix)
@@ -39,10 +46,23 @@ internal enum IOSSignalClassifier {
 
   static func jailbreak(
     existingArtifacts: Set<String>,
-    canWriteOutsideSandbox: Bool
+    outsideSandboxWrite: IOSProbeResult
   ) -> NativeCheckStatus {
-    return existingArtifacts.isEmpty && !canWriteOutsideSandbox
-      ? .notDetected
-      : .detected
+    if !existingArtifacts.isEmpty || outsideSandboxWrite == .positive {
+      return .detected
+    }
+    return outsideSandboxWrite == .inconclusive ? .inconclusive : .notDetected
+  }
+
+  static func sandboxWrite(error: Error?) -> IOSProbeResult {
+    guard let error else { return .positive }
+
+    let nsError = error as NSError
+    let permissionDenied =
+      (nsError.domain == NSCocoaErrorDomain
+        && nsError.code == CocoaError.fileWriteNoPermission.rawValue)
+      || (nsError.domain == NSPOSIXErrorDomain
+        && [Int(EACCES), Int(EPERM)].contains(nsError.code))
+    return permissionDenied ? .negative : .inconclusive
   }
 }
