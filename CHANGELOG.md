@@ -4,7 +4,7 @@
 - Không đọc signing certificate Android khi allowlist chưa được cấu hình; kết quả vẫn là `inconclusive`.
 - Giữ lỗi probe ghi ngoài sandbox iOS ở trạng thái `inconclusive` thay vì xem như thiết bị sạch.
 - Mở rộng unit test và integration contract cho toàn bộ tín hiệu Android/iOS.
-- Rút gọn README theo đúng phạm vi detector và chuẩn bị metadata phát hành pub.dev.
+- Viết lại README bằng ngôn ngữ dành cho người tích hợp, giải thích rõ từng trạng thái, hướng dẫn xử lý kết quả và sửa toàn bộ liên kết tài liệu cho pub.dev.
 
 ## 0.1.0
 
