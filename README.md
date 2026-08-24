@@ -1,25 +1,52 @@
-# device_security_guard
+Flutter plugin thu thập các tín hiệu bảo mật cục bộ trên Android/iOS và chuyển chúng thành khuyến nghị policy rõ ràng cho ứng dụng có nghiệp vụ nhạy cảm.
 
-Flutter plugin trả về tín hiệu bảo mật cục bộ và policy helper cho ứng dụng ngân hàng. Phạm vi v1 bám theo nhóm dấu hiệu tại Thông tư 77/2025/TT-NHNN: debugger, emulator/simulator, ADB, hook/chèn mã, ứng dụng bị đóng gói lại, root/jailbreak và bootloader Android mở khóa.
+> **Phạm vi v1:** package chỉ phát hiện và trả kết quả. Package không tự đóng ứng dụng, không gửi dữ liệu qua mạng và không chứng nhận ứng dụng đã tuân thủ pháp luật.
 
-Package không tự đóng ứng dụng và không tự chứng nhận tuân thủ pháp luật. Ứng dụng chủ phải thẩm định pháp lý, kiểm thử bảo mật và quyết định cách xử lý cuối cùng.
+## Tính năng
 
-## Nền tảng
+| Tín hiệu | Android | iOS |
+|---|:---:|:---:|
+| Debugger | ✅ | ✅ |
+| Emulator / simulator | ✅ | ✅ |
+| ADB đang bật | ✅ | — |
+| Hook / chèn mã runtime | ✅ | ✅ |
+| Repackage / sai danh tính ký | ✅ | ✅, best-effort |
+| Root | ✅ | — |
+| Jailbreak | — | ✅ |
+| Bootloader mở khóa | ✅ | — |
 
-- Android: `minSdk 23`, `compileSdk 36`.
-- iOS: deployment target `15.0`.
-- Không cần cấu hình dịch vụ hoặc backend để chạy detector của package.
+- API bất đồng bộ, không chặn UI thread trong lúc chạy detector native.
+- Mỗi tín hiệu có ba trạng thái: `detected`, `notDetected`, `inconclusive`.
+- `Circular77Policy` trả `allow`, `block` hoặc `indeterminate`.
+- Không yêu cầu permission, dịch vụ ngoài hoặc backend.
+
+## Yêu cầu nền tảng
+
+| Nền tảng | Yêu cầu |
+|---|---|
+| Flutter | `>=3.44.0` |
+| Dart | `>=3.12.0 <4.0.0` |
+| Android | `minSdk 23`, `compileSdk 36` |
+| iOS | deployment target `15.0` |
 
 ## Cài đặt
+
+```bash
+flutter pub add device_security_guard
+```
+
+Hoặc khai báo trong `pubspec.yaml`:
 
 ```yaml
 dependencies:
   device_security_guard: ^0.1.0
 ```
 
-## Sử dụng
+## Bắt đầu nhanh
 
 ```dart
+import 'package:device_security_guard/device_security_guard.dart';
+
 final assessment = await DeviceSecurityGuard.assess(
   options: SecurityOptions(
     expectedAndroidCertificateSha256: {
@@ -31,75 +58,111 @@ final assessment = await DeviceSecurityGuard.assess(
   ),
 );
 
-final decision = Circular77Policy.evaluate(assessment);
-
-switch (decision.action) {
-  case RecommendedAction.allow:
-    // Cho phép tiếp tục.
-    break;
-  case RecommendedAction.block:
-    // Dừng hoặc chặn chức năng theo chính sách của ứng dụng chủ.
-    break;
-  case RecommendedAction.indeterminate:
-    // Không đủ bằng chứng; yêu cầu kiểm tra hoặc xử lý bổ sung.
-    break;
-}
-```
-
-Nên chạy lại khi mở ứng dụng, khi ứng dụng trở về foreground và ngay trước thao tác nhạy cảm. App chủ phải thực sự chặn thao tác nếu policy yêu cầu; kết quả lưu từ lần khởi động có thể đã cũ.
-
-Muốn mọi kết quả chưa thể kết luận đều được khuyến nghị chặn:
-
-```dart
 final decision = Circular77Policy.evaluate(
   assessment,
   failClosed: true,
 );
+
+switch (decision.action) {
+  case RecommendedAction.allow:
+    // Tiếp tục nghiệp vụ.
+    break;
+  case RecommendedAction.block:
+    // Dừng luồng được bảo vệ và thông báo cho người dùng.
+    break;
+  case RecommendedAction.indeterminate:
+    // Chỉ xảy ra khi failClosed là false.
+    // Áp dụng bước xác minh hoặc giới hạn rủi ro bổ sung.
+    break;
+}
 ```
 
-Không cấu hình certificate Android hoặc App ID Prefix iOS sẽ làm tín hiệu `repackaging` trả về `inconclusive`, không mặc định coi là an toàn.
+`DeviceSecurityGuard.assess()` không có signing identity vẫn chạy, nhưng tín hiệu `repackaging` sẽ là `inconclusive`. Đây là thiết kế fail-safe: thiếu cấu hình không được coi là an toàn.
 
-## Ý nghĩa trạng thái
+## Cấu hình production
 
-- `CheckStatus.detected`: phát hiện dấu hiệu rủi ro.
-- `CheckStatus.notDetected`: kiểm tra đã chạy và chưa phát hiện dấu hiệu.
-- `CheckStatus.inconclusive`: không đủ dữ liệu hoặc detector gặp lỗi.
+### Android: SHA-256 certificate
 
-Policy khuyến nghị `block` khi có tín hiệu `detected`, `indeterminate` khi có kết quả `inconclusive`, và chỉ `allow` khi mọi tín hiệu áp dụng đều là `notDetected`. Với `failClosed: true`, `indeterminate` được chuyển thành `block`.
-
-## Cấu hình danh tính ứng dụng
-
-### Android
-
-Truyền SHA-256 của certificate dùng để ký bản cài trên thiết bị, viết hoa và có thể có hoặc không có dấu `:`. Nếu dùng Play App Signing, lấy certificate **App signing key** trong Play Console, không lấy upload key.
+Truyền SHA-256 của certificate thực sự ký APK cài trên thiết bị. Giá trị có thể viết liền hoặc phân cách từng byte bằng dấu `:`.
 
 ```bash
 apksigner verify --print-certs app-release.apk
 ```
 
-### iOS
+Nếu dùng Play App Signing, lấy SHA-256 của **App signing key certificate** trong Play Console, không lấy upload key. Chỉ thêm nhiều certificate khi đang chuyển đổi signing key có kiểm soát; không đưa certificate debug vào cấu hình production.
 
-Truyền App ID Prefix đứng trước dấu chấm trong Keychain access group của ứng dụng, thường có 10 ký tự. Giá trị này thường trùng Team ID nhưng có thể khác ở ứng dụng legacy. Plugin đọc access group qua Security framework công khai; nếu hệ thống không trả được danh tính, kết quả là `inconclusive`.
+### iOS: App ID Prefix
 
-## Phạm vi tín hiệu
+Truyền App ID Prefix đứng trước dấu chấm trong Keychain access group, ví dụ `ABCDE12345` trong `ABCDE12345.com.example.bank`. App ID Prefix thường trùng Team ID nhưng có thể khác ở ứng dụng legacy; khi khác nhau phải dùng App ID Prefix.
 
-| Tín hiệu | Android | iOS |
-|---|:---:|:---:|
-| Debugger | Có | Có |
-| Emulator/simulator | Có | Có |
-| ADB | Có | Không áp dụng |
-| Hook/chèn mã runtime | Có | Có |
-| Repackage/danh tính ký | Có | Có, best-effort |
-| Root | Có | Không áp dụng |
-| Jailbreak | Không áp dụng | Có |
-| Bootloader mở khóa | Có | Không áp dụng |
+Plugin tạo một Keychain item tạm thời để đọc access group do hệ thống cấp rồi xóa item đó. Nếu không đọc được danh tính, kết quả `repackaging` là `inconclusive`.
 
-Chi tiết kỹ thuật và giới hạn nằm trong [ma trận bao phủ Thông tư 77](doc/circular-77-coverage-vi.md).
+> Kiểm tra iOS này là best-effort, không phải chứng thực mật mã và không đảm bảo phát hiện mọi cách đóng gói lại.
+
+## Tích hợp vào luồng ứng dụng
+
+Không nên chỉ kiểm tra một lần rồi giữ kết quả cho toàn bộ phiên. Nên chạy assessment tại ba checkpoint:
+
+1. Khi mở ứng dụng, trước khi hiển thị chức năng ngân hàng.
+2. Khi ứng dụng trở lại foreground.
+3. Ngay trước đăng nhập, thêm người thụ hưởng, chuyển tiền hoặc thao tác nhạy cảm khác.
+
+Khi cần chặn, hãy điều hướng sang màn hình thông báo hoặc dừng riêng luồng nghiệp vụ. Không nên gọi `exit(0)` trên iOS; việc chủ động kết thúc process có thể tạo trải nghiệm xấu và không phải cách thực thi phù hợp trên nền tảng này.
+
+Ứng dụng mẫu trong [`example/lib/main.dart`](example/lib/main.dart) minh họa kiểm tra khi mở app, resume và trước giao dịch.
+
+## Kết quả và policy
+
+### `CheckStatus`
+
+| Trạng thái | Ý nghĩa |
+|---|---|
+| `detected` | Detector tìm thấy ít nhất một dấu hiệu rủi ro. |
+| `notDetected` | Detector đã chạy nhưng không thấy indicator trong phạm vi kiểm tra. Không đồng nghĩa thiết bị chắc chắn an toàn. |
+| `inconclusive` | Thiếu cấu hình, thiếu dữ liệu hoặc detector không thể kết luận. |
+
+### `RecommendedAction`
+
+| Hành động | Điều kiện mặc định |
+|---|---|
+| `block` | Có tín hiệu `detected`; hoặc có `inconclusive` khi `failClosed: true`. |
+| `indeterminate` | Không có `detected` nhưng có ít nhất một `inconclusive`. |
+| `allow` | Mọi tín hiệu bắt buộc của nền tảng đều là `notDetected`. |
+
+`reasonCode` dành cho log kỹ thuật và telemetry nội bộ. Không hiển thị trực tiếp mã này cho người dùng và không xây business logic phụ thuộc vào nội dung thông báo tiếng Anh của `PlatformException`.
+
+## Xử lý lỗi
+
+- `ArgumentError`: certificate hoặc App ID Prefix sai định dạng.
+- `PlatformException(code: 'invalid_payload')`: native layer trả payload không hợp lệ.
+- Các lỗi platform khác: plugin chưa được đăng ký hoặc assessment native không hoàn tất.
+
+Với nghiệp vụ fail-closed, ứng dụng chủ nên coi lỗi gọi API như một assessment chưa thể kết luận và dừng luồng nhạy cảm theo policy nội bộ.
+
+## Liên hệ với Thông tư 77/2025/TT-NHNN
+
+Khoản 2 Điều 5 Thông tư 77/2025/TT-NHNN sửa đổi khoản 4 Điều 8 Thông tư 50/2024/TT-NHNN, bổ sung yêu cầu Mobile Banking nhận diện các môi trường như debugger, thiết bị ảo, ADB, hook, repackage, root/jailbreak và bootloader mở khóa; khi phát hiện phải dừng/thoát và thông báo theo quy định.
+
+Package cung cấp lớp **phát hiện** và **policy helper** cho các nhóm tín hiệu này. Ứng dụng chủ vẫn phải:
+
+- thực thi việc dừng luồng hoặc chặn truy cập;
+- hiển thị thông báo phù hợp;
+- kiểm thử trên ma trận thiết bị thực tế;
+- thực hiện đánh giá pháp lý và bảo mật độc lập.
+
+Xem [ma trận bao phủ kỹ thuật](doc/circular-77-coverage-vi.md). Văn bản chính thức được ban hành ngày 31/12/2025 và có hiệu lực từ 01/03/2026: [Cổng Thông tin điện tử Chính phủ](https://vanban.chinhphu.vn/?docid=216580&pageid=27160).
 
 ## Giới hạn bảo mật
 
-Detector phía client là heuristic defense-in-depth: có thể có false positive, false negative và có thể bị hook/bypass khi attacker kiểm soát đủ sâu ứng dụng hoặc hệ điều hành. Không dùng một tín hiệu đơn lẻ làm bằng chứng tuyệt đối. Với nghiệp vụ rủi ro cao, nên kết hợp kiểm soát giao dịch ở backend, quản trị phiên, telemetry, giới hạn rủi ro và kiểm thử trên thiết bị thật.
+Detector phía client là một lớp defense-in-depth và có thể có false positive, false negative hoặc bị hook/bypass khi attacker kiểm soát đủ sâu ứng dụng hay hệ điều hành. Không dùng kết quả package làm bằng chứng tuyệt đối hoặc lớp bảo vệ duy nhất.
 
-Package không gửi dữ liệu qua mạng và không thu thập telemetry.
+Với nghiệp vụ rủi ro cao, nên kết hợp kiểm soát giao dịch tại backend, quản trị phiên, giới hạn rủi ro, telemetry và kiểm thử xâm nhập. Package không thu thập dữ liệu, không gửi telemetry và không thực hiện request mạng.
 
-Văn bản tham chiếu: [Thông tư 77/2025/TT-NHNN trên Cổng Thông tin điện tử Chính phủ](https://vanban.chinhphu.vn/?docid=216580&pageid=27160).
+## Tài liệu
+
+- [Ma trận bao phủ Thông tư 77](doc/circular-77-coverage-vi.md)
+- [Hướng dẫn phát hành lên pub.dev](doc/publishing-vi.md)
+- [Chính sách bảo mật](SECURITY.md)
+- [Lịch sử thay đổi](CHANGELOG.md)
+
+Phát hành theo giấy phép [MIT](LICENSE).

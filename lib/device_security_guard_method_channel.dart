@@ -12,6 +12,7 @@ class MethodChannelDeviceSecurityGuard extends DeviceSecurityGuardPlatform {
   );
 
   @override
+  /// Chạy assessment native và chuẩn hóa payload thành [SecurityAssessment].
   Future<SecurityAssessment> assessLocal(SecurityOptions options) async {
     final payload = await methodChannel
         .invokeMethod<Object?>('assess', <String, Object?>{

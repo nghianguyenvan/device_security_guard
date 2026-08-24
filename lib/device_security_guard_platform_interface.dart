@@ -5,6 +5,7 @@ import 'src/models.dart';
 import 'src/required_signals.dart';
 import 'src/security_options.dart';
 
+/// Hợp đồng platform implementation của `device_security_guard`.
 abstract class DeviceSecurityGuardPlatform extends PlatformInterface {
   /// Khởi tạo platform interface.
   DeviceSecurityGuardPlatform() : super(token: _token);
@@ -14,8 +15,10 @@ abstract class DeviceSecurityGuardPlatform extends PlatformInterface {
   static DeviceSecurityGuardPlatform _instance =
       MethodChannelDeviceSecurityGuard();
 
+  /// Toàn bộ tín hiệu bắt buộc trong payload Android.
   static const androidSignals = androidRequiredSignals;
 
+  /// Toàn bộ tín hiệu bắt buộc trong payload iOS.
   static const iosSignals = iosRequiredSignals;
 
   /// Instance [DeviceSecurityGuardPlatform] đang được sử dụng.
@@ -29,5 +32,6 @@ abstract class DeviceSecurityGuardPlatform extends PlatformInterface {
     _instance = instance;
   }
 
+  /// Chạy các detector cục bộ của nền tảng.
   Future<SecurityAssessment> assessLocal(SecurityOptions options);
 }

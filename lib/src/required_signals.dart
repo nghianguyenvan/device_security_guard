@@ -1,5 +1,6 @@
 import 'models.dart';
 
+/// Các tín hiệu bắt buộc trong assessment Android.
 const androidRequiredSignals = {
   SecuritySignal.debugger,
   SecuritySignal.emulator,
@@ -10,6 +11,7 @@ const androidRequiredSignals = {
   SecuritySignal.bootloaderUnlocked,
 };
 
+/// Các tín hiệu bắt buộc trong assessment iOS.
 const iosRequiredSignals = {
   SecuritySignal.debugger,
   SecuritySignal.emulator,
@@ -18,6 +20,7 @@ const iosRequiredSignals = {
   SecuritySignal.jailbreak,
 };
 
+/// Trả về tập tín hiệu bắt buộc của [platform].
 Set<SecuritySignal> requiredSignalsFor(SecurityPlatform platform) =>
     switch (platform) {
       SecurityPlatform.android => androidRequiredSignals,
