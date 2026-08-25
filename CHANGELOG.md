@@ -1,3 +1,8 @@
+## 0.1.3 - 2026-08-25
+
+- Thêm extension trên `SecurityAssessment` để đọc nhanh kết quả qua `isRooted`, `isJailbroken`, `isDebuggerAttached`, `isEmulator`, `isRealDevice` và các getter tương ứng với toàn bộ hạng mục kiểm tra.
+- Viết lại hướng dẫn tích hợp theo nhu cầu sử dụng: getter đọc nhanh, kết quả ba trạng thái đầy đủ, xử lý toàn bộ hạng mục và policy tổng hợp.
+
 ## 0.1.2 - 2026-08-24
 
 - Viết lại README bằng ngôn ngữ dành cho người tích hợp, giải thích rõ từng trạng thái và hướng dẫn cách sử dụng package.

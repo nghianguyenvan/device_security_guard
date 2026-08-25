@@ -7,6 +7,7 @@ import 'src/security_options.dart';
 
 export 'src/circular_77_policy.dart';
 export 'src/models.dart';
+export 'src/security_assessment_extensions.dart';
 export 'src/security_options.dart';
 
 /// Điểm truy cập cho đánh giá bảo mật cục bộ trên thiết bị.
