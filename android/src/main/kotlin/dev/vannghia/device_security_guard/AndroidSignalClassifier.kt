@@ -97,15 +97,19 @@ internal object AndroidSignalClassifier {
     fun hooking(
         processMaps: String?,
         loadedFrameworks: Set<String> = emptySet(),
+        threadNames: Set<String> = emptySet(),
     ): CheckValue {
         val normalized =
             listOfNotNull(processMaps)
                 .plus(loadedFrameworks)
                 .joinToString()
                 .lowercase()
-        return if (hookMarkers.any(normalized::contains)) {
+        // Frida's JS scheduler can retain this name after its library is renamed.
+        // Do not match generic GLib thread names such as "gmain".
+        val fridaThread = threadNames.any { it.trim() == "gum-js-loop" }
+        return if (hookMarkers.any(normalized::contains) || fridaThread) {
             CheckValue.DETECTED
-        } else if (processMaps == null) {
+        } else if (processMaps.isNullOrBlank()) {
             CheckValue.INCONCLUSIVE
         } else {
             CheckValue.NOT_DETECTED

@@ -86,7 +86,15 @@ internal class AndroidSecurityDetector(
             ).filter { className ->
                 runCatching { Class.forName(className, false, context.classLoader) }.isSuccess
             }
-        val value = AndroidSignalClassifier.hooking(maps, loadedFrameworks.toSet())
+        // Supplementary evidence: threads may exit between listing and reading.
+        // Failure here must not discard evidence from maps or loaded classes.
+        val threadNames = runCatching {
+            File("/proc/self/task").listFiles().orEmpty().mapNotNull { task ->
+                runCatching { File(task, "comm").bufferedReader().use { it.readLine() } }
+                    .getOrNull()
+            }.toSet()
+        }.getOrDefault(emptySet())
+        val value = AndroidSignalClassifier.hooking(maps, loadedFrameworks.toSet(), threadNames)
         return value.result(
             "hook_framework_detected",
             "hook_framework_not_detected",

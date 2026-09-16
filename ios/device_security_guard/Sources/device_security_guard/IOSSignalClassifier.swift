@@ -26,7 +26,12 @@ internal enum IOSSignalClassifier {
       let normalized = value.lowercased()
       return hookMarkers.contains(where: normalized.contains)
     }
-    return detected ? .detected : .notDetected
+    if detected { return .detected }
+    // A running app has loaded images. An empty observation is not a clean scan.
+    let hasImages = loadedImages.contains {
+      !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+    return hasImages ? .notDetected : .inconclusive
   }
 
   static func repackaging(

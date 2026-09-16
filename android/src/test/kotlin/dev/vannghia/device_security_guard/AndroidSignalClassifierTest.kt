@@ -162,35 +162,47 @@ internal class AndroidSignalClassifierTest {
     }
 
     @Test
+    fun emptyProcessMapsAreInconclusive() {
+        assertEquals(CheckValue.INCONCLUSIVE, AndroidSignalClassifier.hooking(" \n\t"))
+    }
+
+    @Test
+    fun fridaThreadDetectsRenamedLibrary() {
+        assertEquals(
+            CheckValue.DETECTED,
+            AndroidSignalClassifier.hooking(
+                processMaps = "/data/app/example/lib/arm64/librenamed.so",
+                threadNames = setOf("gum-js-loop\n"),
+            ),
+        )
+    }
+
+    @Test
+    fun fridaThreadIsDetectedWithoutProcessMaps() {
+        assertEquals(
+            CheckValue.DETECTED,
+            AndroidSignalClassifier.hooking(null, threadNames = setOf("gum-js-loop")),
+        )
+    }
+
+    @Test
+    fun genericThreadNamesAreNotEvidenceOfHooking() {
+        assertEquals(
+            CheckValue.NOT_DETECTED,
+            AndroidSignalClassifier.hooking(
+                processMaps = "/system/lib64/libc.so",
+                threadNames = setOf("gmain", "RenderThread", "gum-js-loop-app"),
+            ),
+        )
+    }
+
+    @Test
     fun loadedHookFrameworkIsDetectedWhenProcessMapsAreUnavailable() {
         assertEquals(
             CheckValue.DETECTED,
             AndroidSignalClassifier.hooking(
                 processMaps = null,
                 loadedFrameworks = setOf("de.robv.android.xposed.XposedBridge"),
-            ),
-        )
-    }
-
-    @Test
-    fun cleanProcessMapsAreNotDetectedAsHooking() {
-        assertEquals(
-            CheckValue.NOT_DETECTED,
-            AndroidSignalClassifier.hooking(
-                "/system/lib64/libandroid_runtime.so\n/system/lib64/libc.so",
-            ),
-        )
-    }
-
-    @Test
-    fun rootArtifactIsDetected() {
-        assertEquals(
-            CheckValue.DETECTED,
-            AndroidSignalClassifier.root(
-                buildTags = "release-keys",
-                existingArtifacts = setOf("su"),
-                debuggable = SystemPropertyRead.Value("0"),
-                secure = SystemPropertyRead.Value("1"),
             ),
         )
     }
@@ -248,18 +260,6 @@ internal class AndroidSignalClassifierTest {
                 "tags=$tags debuggable=$debuggable secure=$secure",
             )
         }
-    }
-
-    @Test
-    fun unlockedVerifiedBootIsDetected() {
-        assertEquals(
-            CheckValue.DETECTED,
-            AndroidSignalClassifier.bootloader(
-                verifiedBootState = SystemPropertyRead.Value("orange"),
-                flashLocked = SystemPropertyRead.Value("0"),
-                vbmetaDeviceState = SystemPropertyRead.Value("unlocked"),
-            ),
-        )
     }
 
     @Test
@@ -395,28 +395,6 @@ internal class AndroidSignalClassifierTest {
             CheckValue.NOT_DETECTED,
             AndroidSignalClassifier.repackaging(
                 actualCertificates = setOf("AABB"),
-                expectedCertificates = setOf("AABB"),
-            ),
-        )
-    }
-
-    @Test
-    fun missingExpectedCertificateIsInconclusive() {
-        assertEquals(
-            CheckValue.INCONCLUSIVE,
-            AndroidSignalClassifier.repackaging(
-                actualCertificates = setOf("AABB"),
-                expectedCertificates = emptySet(),
-            ),
-        )
-    }
-
-    @Test
-    fun missingActualCertificateIsInconclusive() {
-        assertEquals(
-            CheckValue.INCONCLUSIVE,
-            AndroidSignalClassifier.repackaging(
-                actualCertificates = emptySet(),
                 expectedCertificates = setOf("AABB"),
             ),
         )

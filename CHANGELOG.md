@@ -1,3 +1,10 @@
+## 0.1.4 - 2026-09-16
+
+- Bổ sung nhận diện thread `gum-js-loop` của Frida trên Android khi tên thư viện không còn là dấu hiệu nhận diện.
+- Trả hook `inconclusive` khi maps Android hoặc danh sách image iOS rỗng và không có dấu hiệu hook khác.
+- Thêm kiểm thử hồi quy và ma trận kiểm thử can thiệp trên thiết bị thật; giữ nguyên API công khai.
+- Rút gọn bộ test, giữ các luồng bảo mật quan trọng và loại bỏ kiểm tra trùng lặp, getter đơn giản và UI app mẫu.
+
 ## 0.1.3 - 2026-08-25
 
 - Thêm extension trên `SecurityAssessment` để đọc nhanh kết quả qua `isRooted`, `isJailbroken`, `isDebuggerAttached`, `isEmulator`, `isRealDevice` và các getter tương ứng với toàn bộ hạng mục kiểm tra.

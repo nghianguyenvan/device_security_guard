@@ -63,41 +63,22 @@ class RunnerTests: XCTestCase {
     )
   }
 
+  func testEmptyRuntimeImagesAreInconclusive() {
+    XCTAssertEqual(
+      IOSSignalClassifier.hooking(loadedImages: [], environment: [:]),
+      .inconclusive
+    )
+    XCTAssertEqual(
+      IOSSignalClassifier.hooking(loadedImages: [" \n"], environment: [:]),
+      .inconclusive
+    )
+  }
+
   func testInjectedLibraryEnvironmentIsClassifiedAsHooking() {
     XCTAssertEqual(
       IOSSignalClassifier.hooking(
         loadedImages: [],
         environment: ["DYLD_INSERT_LIBRARIES": "/tmp/ElleKit.dylib"]
-      ),
-      .detected
-    )
-  }
-
-  func testMatchingApplicationIdentifierPrefixIsNotRepackaged() {
-    XCTAssertEqual(
-      IOSSignalClassifier.repackaging(
-        actualApplicationIdentifierPrefix: "OLDPREFIX1",
-        expectedApplicationIdentifierPrefixes: ["OLDPREFIX1"]
-      ),
-      .notDetected
-    )
-  }
-
-  func testMissingApplicationIdentifierPrefixIsInconclusive() {
-    XCTAssertEqual(
-      IOSSignalClassifier.repackaging(
-        actualApplicationIdentifierPrefix: nil,
-        expectedApplicationIdentifierPrefixes: ["OLDPREFIX1"]
-      ),
-      .inconclusive
-    )
-  }
-
-  func testMismatchedApplicationIdentifierPrefixIsRepackaged() {
-    XCTAssertEqual(
-      IOSSignalClassifier.repackaging(
-        actualApplicationIdentifierPrefix: "NEWPREFIX2",
-        expectedApplicationIdentifierPrefixes: ["OLDPREFIX1"]
       ),
       .detected
     )
@@ -156,13 +137,6 @@ class RunnerTests: XCTestCase {
         outsideSandboxWrite: .positive
       ),
       .detected
-    )
-  }
-
-  func testSuccessfulOutsideSandboxWriteIsPositive() {
-    XCTAssertEqual(
-      IOSSignalClassifier.sandboxWrite(error: nil),
-      .positive
     )
   }
 

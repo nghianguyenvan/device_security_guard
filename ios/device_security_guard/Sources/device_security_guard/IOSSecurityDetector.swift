@@ -63,7 +63,8 @@ internal final class IOSSecurityDetector {
     )
     return value.result(
       detected: "hook_framework_detected",
-      notDetected: "hook_framework_not_detected"
+      notDetected: "hook_framework_not_detected",
+      inconclusive: "loaded_images_unavailable"
     )
   }
 

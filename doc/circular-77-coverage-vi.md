@@ -11,7 +11,7 @@ Tài liệu ánh xạ detector của `device_security_guard` với nhóm dấu h
 | Trình gỡ lỗi | `Debug.isDebuggerConnected`, trạng thái chờ debugger và `TracerPid` trong `/proc/self/status` | cờ `P_TRACED` qua `sysctl` | Có thể bị hook để làm sai kết quả runtime. |
 | Thiết bị ảo | build fingerprint/model/manufacturer/brand/device/product/hardware và `ro.kernel.qemu` | `targetEnvironment(simulator)` | Android dùng heuristic nên có nguy cơ false positive trên thiết bị/OEM đặc biệt. |
 | ADB | `Settings.Global.ADB_ENABLED` | Không áp dụng | Chỉ phản ánh trạng thái ADB tại thời điểm assessment. |
-| Hook/chèn mã | `/proc/self/maps`, loaded classes và marker Frida/Xposed/LSPosed/Substrate/Zygisk/Riru/SandHook/YAHFA/Dobby | loaded Mach-O images, `DYLD_INSERT_LIBRARIES`, marker Frida/Substrate/Substitute/ElleKit | Chỉ nhận diện indicator đã biết; framework được đổi tên hoặc ẩn có thể không bị phát hiện. |
+| Hook/chèn mã | `/proc/self/maps`, loaded classes, thread `gum-js-loop` trong `/proc/self/task/*/comm` và marker Frida/Xposed/LSPosed/Substrate/Zygisk/Riru/SandHook/YAHFA/Dobby | loaded Mach-O images, `DYLD_INSERT_LIBRARIES`, marker Frida/Substrate/Substitute/ElleKit | Chỉ nhận diện indicator đã biết; framework được đổi tên hoặc ẩn có thể không bị phát hiện. |
 | Repackage/danh tính ký | SHA-256 certificate của APK đang chạy so với allowlist | App ID Prefix trong Keychain access group so với allowlist | Phải cấu hình allowlist. iOS là kiểm tra best-effort, không phải chứng thực mật mã. |
 | Root/jailbreak | test-keys, `su`, Magisk, KernelSU, APatch, `ro.debuggable`, `ro.secure` | jailbreak artifacts và thử ghi ngoài sandbox | Root/jailbreak ẩn có thể vượt qua heuristic. Jailbreak trên simulator luôn `inconclusive`. |
 | Bootloader mở khóa | verified boot state, flash lock và vbmeta device state | Không áp dụng | Một số OEM không công bố đủ system property; khi đó kết quả là `inconclusive`. |
@@ -23,6 +23,12 @@ Tài liệu ánh xạ detector của `device_security_guard` với nhóm dấu h
 - `inconclusive`: thiếu cấu hình, dữ liệu không khả dụng hoặc detector gặp lỗi.
 
 Tín hiệu không áp dụng cho nền tảng không được đưa vào `SecurityAssessment.signals`. Dart layer bổ sung `inconclusive/missing_signal` nếu native payload thiếu một tín hiệu bắt buộc.
+
+Hook detector trả `inconclusive` khi maps Android hoặc danh sách image iOS rỗng
+và không có dấu hiệu hook khác. Tên thread Android là bằng chứng bổ sung theo
+[JS scheduler của Frida](https://github.com/frida/frida-gum/blob/main/bindings/gumjs/gumscriptscheduler.c);
+việc đọc thread thất bại không làm mất kết quả từ maps/classes. Không dùng tên
+thread phổ biến như `gmain` làm dấu hiệu hook.
 
 ## Policy mặc định
 
@@ -49,5 +55,24 @@ Tín hiệu không áp dụng cho nền tảng không được đưa vào `Secur
 - Emulator/simulator và thiết bị có ADB bật/tắt.
 - Runtime có framework hook phổ biến và bản đã đổi tên indicator.
 - Trạng thái thiếu cấu hình, native error và payload không đầy đủ.
+
+### Ma trận kiểm thử can thiệp trên thiết bị thật
+
+Unit test chỉ xác minh cách phân loại dữ liệu đầu vào; không chứng minh detector
+chống được can thiệp trên thiết bị. Khi kiểm thử bản release, lưu phiên bản OS,
+thiết bị, công cụ, cấu hình che giấu, kết quả từng signal và bằng chứng quan sát.
+
+| Tình huống | Mục tiêu kiểm chứng |
+|---|---|
+| Thiết bị sạch, SDK production đầy đủ | Không báo nhầm hook/root/jailbreak. |
+| Frida mặc định | Phát hiện khi công cụ đã được nạp vào process. |
+| Frida đổi tên thư viện, giữ thread `gum-js-loop` (Android) | Kiểm chứng nguồn dấu hiệu thread bổ sung độc lập với tên thư viện. |
+| Frida đổi cả thư viện và thread | Ghi nhận khả năng bỏ sót; không coi marker detection là chống ẩn tuyệt đối. |
+| Hook API đọc file, maps hoặc system property | Kiểm chứng khả năng làm sai dữ liệu; không đánh đồng kết quả sạch giả với thiết bị sạch. |
+| Root/jailbreak có và không bật cơ chế che giấu | Ghi nhận phạm vi phát hiện và các trường hợp bỏ sót theo công cụ/OS. |
+| Gắn công cụ sau lần assessment đầu | Gọi lại assessment và kiểm tra kết quả mới. |
+| Nguồn dữ liệu runtime rỗng/không đọc được | Kết quả không xác định phải được phân biệt với không phát hiện. |
+
+Các kịch bản trên là checklist cần chạy, không phải kết quả kiểm thử đã đạt.
 
 Nguồn chính thức: [Thông tư 77/2025/TT-NHNN](https://vanban.chinhphu.vn/?docid=216580&pageid=27160), ban hành ngày 31/12/2025, có hiệu lực từ 01/03/2026.
